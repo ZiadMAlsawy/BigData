@@ -1,0 +1,24 @@
+services:
+  namenode:
+    image: hozien/big-data:namenode
+    container_name: namenode
+    ports:
+      - "9870:9870"
+      - "9000:9000"
+
+  datanode1:
+    image: hozien/big-data:datanode
+    container_name: datanode1
+    ports:
+      - "9864:9864"
+
+  datanode2:
+    image: hozien/big-data:datanode
+    container_name: datanode2
+    ports:
+      - "9865:9864"
+  datanode3:
+    image: hozien/big-data:datanode
+    container_name: datanode3
+    ports:
+      - "9866:9864"
