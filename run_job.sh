@@ -15,7 +15,9 @@ NAMENODE="namenode"
 STREAMING_JAR="/opt/hadoop-3.2.1/share/hadoop/tools/lib/hadoop-streaming-3.2.1.jar"
 HDFS_INPUT="/user/student/library"
 HDFS_OUTPUT="/user/student/reverse_index_output"
-SAMPLE_LINES=20   # how many output lines to preview
+SAMPLE_LINES=20
+# Pass number of active datanodes as first arg (default 3)
+REPLICATION=${1:-3}
 
 # ── Remove previous output (Hadoop refuses to overwrite) ─────────
 echo ""
@@ -33,8 +35,13 @@ START=$(date +%s)
 
 # Ensure Python3 is installed in the container
 echo ">>> Checking Python3..."
-MSYS_NO_PATHCONV=1 docker exec $NAMENODE bash -c \
-  "which python3 || (apt-get update -qq && apt-get install -y -qq python3)"
+MSYS_NO_PATHCONV=1 docker exec $NAMENODE bash -c "which python3 > /dev/null 2>&1 || (
+  cat > /etc/apt/sources.list << 'EOF'
+deb http://archive.debian.org/debian stretch main
+deb http://archive.debian.org/debian-security stretch/updates main
+EOF
+  apt-get -o Acquire::Check-Valid-Until=false update -qq && apt-get install -y -qq python3
+)"
 
 # Fix Windows line endings in scripts (safe to run even on Linux)
 MSYS_NO_PATHCONV=1 docker exec $NAMENODE bash -c \
@@ -42,6 +49,7 @@ MSYS_NO_PATHCONV=1 docker exec $NAMENODE bash -c \
 
 MSYS_NO_PATHCONV=1 docker exec $NAMENODE bash -c "
 hadoop jar $STREAMING_JAR \
+  -D dfs.replication=$REPLICATION \
   -files /tmp/stopwords.txt,/tmp/mapper.py,/tmp/reducer.py \
   -mapper  'python3 mapper.py' \
   -reducer 'python3 reducer.py' \
