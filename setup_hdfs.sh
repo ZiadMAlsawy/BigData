@@ -29,6 +29,13 @@ docker-compose up -d
 echo "    Waiting 20 seconds for services to initialize..."
 sleep 20
 
+# ── Step 1.5: Install Python3 in the namenode container ─────────
+echo ""
+echo ">>> [1.5/4] Ensuring Python3 is installed in namenode..."
+MSYS_NO_PATHCONV=1 docker exec $NAMENODE bash -c \
+  "which python3 || (apt-get update -qq && apt-get install -y -qq python3)"
+echo "    Python3 ready."
+
 # ── Step 2: Copy scripts into namenode ──────────────────────────
 echo ""
 echo ">>> [2/4] Copying scripts into namenode..."

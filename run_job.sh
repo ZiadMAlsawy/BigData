@@ -31,6 +31,11 @@ echo ""
 
 START=$(date +%s)
 
+# Ensure Python3 is installed in the container
+echo ">>> Checking Python3..."
+MSYS_NO_PATHCONV=1 docker exec $NAMENODE bash -c \
+  "which python3 || (apt-get update -qq && apt-get install -y -qq python3)"
+
 # Fix Windows line endings in scripts (safe to run even on Linux)
 MSYS_NO_PATHCONV=1 docker exec $NAMENODE bash -c \
   "sed -i 's/\r//' /tmp/mapper.py /tmp/reducer.py /tmp/stopwords.txt"
