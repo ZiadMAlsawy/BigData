@@ -17,10 +17,10 @@ set -e
 NAMENODE="namenode"
 HDFS_LIB="/user/student/library"
 
-BOOKS_DIR="../Assignment 1/Books"
-STOPWORDS="../Assignment 1/stopwords.txt"
-MAPPER="../mapreduce/mapper.py"
-REDUCER="../mapreduce/reducer.py"
+BOOKS_DIR="../BigData/Assignment 1/Books/"
+STOPWORDS="../BigData/Assignment 1/stopwords.txt"
+MAPPER="../BigData/mapreduce/mapper.py"
+REDUCER="../BigData/mapreduce/reducer.py"
 
 # ── Step 1: Start cluster ────────────────────────────────────────
 echo ""
