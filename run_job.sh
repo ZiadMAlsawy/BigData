@@ -31,6 +31,10 @@ echo ""
 
 START=$(date +%s)
 
+# Fix Windows line endings in scripts (safe to run even on Linux)
+MSYS_NO_PATHCONV=1 docker exec $NAMENODE bash -c \
+  "sed -i 's/\r//' /tmp/mapper.py /tmp/reducer.py /tmp/stopwords.txt"
+
 MSYS_NO_PATHCONV=1 docker exec $NAMENODE bash -c "
 hadoop jar $STREAMING_JAR \
   -files /tmp/stopwords.txt,/tmp/mapper.py,/tmp/reducer.py \
@@ -38,7 +42,7 @@ hadoop jar $STREAMING_JAR \
   -reducer 'python3 reducer.py' \
   -input   $HDFS_INPUT \
   -output  $HDFS_OUTPUT
-" 2>&1 | grep --line-buffered -E "map|reduce|completed|failed|ERROR|Streaming"
+" 2>&1 | grep --line-buffered -E "map [0-9]|reduce [0-9]|completed|failed|ERROR|Streaming|Caused"
 
 END=$(date +%s)
 ELAPSED=$((END - START))
@@ -57,7 +61,11 @@ JOB_STATUS=$(MSYS_NO_PATHCONV=1 docker exec $NAMENODE bash -c \
 
 if [ "$JOB_STATUS" != "OK" ]; then
     echo ""
-    echo "!!! Job did not produce a _SUCCESS file. Check logs above for errors."
+    echo "!!! Job failed. Task-level error output:"
+    echo "─────────────────────────────────────────────────────────────"
+    MSYS_NO_PATHCONV=1 docker exec $NAMENODE bash -c \
+      "find /tmp/hadoop-root/userlogs -name 'stderr' | xargs cat 2>/dev/null | tail -40"
+    echo "─────────────────────────────────────────────────────────────"
     exit 1
 fi
 
