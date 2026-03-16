@@ -1,30 +1,15 @@
 #!/bin/bash
-# ─────────────────────────────────────────────────────────────────
-# run_job.sh — Submit the MapReduce job and show timing + sample output
-#
-# Run this from the mapreduce/ folder AFTER setup_hdfs.sh:
-#   bash run_job.sh
-#
-# Prerequisites:
-#   - Cluster is up (setup_hdfs.sh already ran)
-#   - Books are on HDFS at /user/student/library
-#   - mapper.py, reducer.py, stopwords.txt are in namenode:/tmp/
-# ─────────────────────────────────────────────────────────────────
 
 NAMENODE="namenode"
 STREAMING_JAR="/opt/hadoop-3.2.1/share/hadoop/tools/lib/hadoop-streaming-3.2.1.jar"
 HDFS_INPUT="/user/student/library"
 HDFS_OUTPUT="/user/student/reverse_index_output"
 SAMPLE_LINES=20
-# Pass number of active datanodes as first arg (default 3)
 REPLICATION=${1:-3}
 
-# ── Remove previous output (Hadoop refuses to overwrite) ─────────
 echo ""
 echo ">>> Clearing previous output (if any)..."
 MSYS_NO_PATHCONV=1 docker exec $NAMENODE bash -c "hdfs dfs -rm -r -f $HDFS_OUTPUT"
-
-# ── Submit the job and measure wall-clock time ───────────────────
 echo ""
 echo ">>> Submitting MapReduce job..."
 echo "    Input : $HDFS_INPUT"
@@ -43,7 +28,6 @@ EOF
   apt-get -o Acquire::Check-Valid-Until=false update -qq && apt-get install -y -qq python3
 )"
 
-# Fix Windows line endings in scripts (safe to run even on Linux)
 MSYS_NO_PATHCONV=1 docker exec $NAMENODE bash -c \
   "sed -i 's/\r//' /tmp/mapper.py /tmp/reducer.py /tmp/stopwords.txt"
 
@@ -60,7 +44,6 @@ hadoop jar $STREAMING_JAR \
 END=$(date +%s)
 ELAPSED=$((END - START))
 
-# ── Result summary ───────────────────────────────────────────────
 echo ""
 echo "╔══════════════════════════════════════════╗"
 echo "  Execution time : ${ELAPSED} seconds"

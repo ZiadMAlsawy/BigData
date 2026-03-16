@@ -42,13 +42,13 @@ BigData/
 ├── docker-compose.yml          # Hadoop cluster definition (namenode + 3 datanodes)
 ├── setup_hdfs.sh               # One-time setup: start cluster, upload books to HDFS
 ├── run_job.sh                  # Submit the MapReduce job (accepts node count as arg)
-├── Assignment 1/
+├── Mini Project 1/
 │   ├── Books/                  # 20 Project Gutenberg .txt books
-│   └── stopwords.txt           # Stop-words filter list
-└── mapreduce/
-    ├── mapper.py               # Hadoop Streaming mapper
-    ├── reducer.py              # Hadoop Streaming reducer
-    └── test_local.sh           # Local test (no Hadoop needed)
+    ├── stopwords.txt           # Stop-words filter list
+    ├── mapreduce/
+        ├── mapper.py           # Hadoop Streaming mapper
+        ├── reducer.py          # Hadoop Streaming reducer
+        └── test_local.sh       # Local test (no Hadoop needed)
 ```
 
 ---
@@ -99,12 +99,12 @@ Copy scripts and books into the namenode, then upload to HDFS:
 
 ```bash
 # Copy Python scripts and stopwords
-docker cp "Assignment 1/stopwords.txt"  namenode:/tmp/stopwords.txt
-docker cp mapreduce/mapper.py           namenode:/tmp/mapper.py
-docker cp mapreduce/reducer.py          namenode:/tmp/reducer.py
+docker cp "Mini Project 1/stopwords.txt" namenode:/tmp/stopwords.txt
+docker cp "Mini Project 1/mapreduce/mapper.py" namenode:/tmp/mapper.py
+docker cp "Mini Project 1/mapreduce/reducer.py" namenode:/tmp/reducer.py
 
 # Copy all books as a folder (avoids Windows path-with-spaces issues)
-docker cp "Assignment 1/Books" namenode:/tmp/books
+docker cp "Mini Project 1/Books" namenode:/tmp/books
 
 # Fix Windows line endings, create HDFS directory, upload all books
 MSYS_NO_PATHCONV=1 docker exec namenode bash -c "
@@ -144,10 +144,10 @@ sleep 25
 MSYS_NO_PATHCONV=1 docker exec namenode hdfs dfsadmin -report 2>&1 | grep "Live datanodes"
 
 # 2. Re-copy files into the fresh namenode container
-docker cp "Assignment 1/stopwords.txt"  namenode:/tmp/stopwords.txt
-docker cp mapreduce/mapper.py           namenode:/tmp/mapper.py
-docker cp mapreduce/reducer.py          namenode:/tmp/reducer.py
-docker cp "Assignment 1/Books"          namenode:/tmp/books
+docker cp "Mini Project 1/stopwords.txt" namenode:/tmp/stopwords.txt
+docker cp "Mini Project 1/mapreduce/mapper.py" namenode:/tmp/mapper.py
+docker cp "Mini Project 1/mapreduce/reducer.py" namenode:/tmp/reducer.py
+docker cp "Mini Project 1/Books" namenode:/tmp/books
 
 # 3. Install Python3 (fresh container has none)
 MSYS_NO_PATHCONV=1 docker exec namenode bash -c "
@@ -169,7 +169,7 @@ MSYS_NO_PATHCONV=1 docker exec namenode bash -c "
 bash run_job.sh 1
 ```
 
-Record the **Execution time** shown in the box. This is **T1**.
+Time taken on one datanode: 11 seconds
 
 ---
 
@@ -194,7 +194,7 @@ MSYS_NO_PATHCONV=1 docker exec namenode bash -c "
 bash run_job.sh 2
 ```
 
-Record the **Execution time**. This is **T2**.
+Time taken on two datanodes: 11 seconds.
 
 ---
 
@@ -219,16 +219,16 @@ MSYS_NO_PATHCONV=1 docker exec namenode bash -c "
 bash run_job.sh 3
 ```
 
-Record the **Execution time**. This is **T3**.
+Time taken on three datanodes: 11 seconds.
 
 ---
 
-## Local Test (no Hadoop needed)
+## Local Test
 
 To verify mapper and reducer logic on a single book before submitting to the cluster:
 
 ```bash
-cd mapreduce/
+cd "Mini Project 1/mapreduce/"
 bash test_local.sh
 ```
 
@@ -241,7 +241,7 @@ the first results to the terminal.
 
 After collecting T1, T2, T3:
 
-| Metric            | Formula      | Example         |
+| Metric            | Formula      | Time Taken      |
 | :---------------- | :----------- | :-------------- |
 | Speedup (2 nodes) | S2 = T1 / T2 | 10 / 9 = 1.11x  |
 | Speedup (3 nodes) | S3 = T1 / T3 | 10 / 9 = 1.11x  |
