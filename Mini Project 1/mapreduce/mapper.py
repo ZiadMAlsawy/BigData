@@ -31,6 +31,9 @@ def normalize(line):
 # def main():
 stopwords = load_stopwords("../stopwords.txt")
 doc_name = get_document_name()
+print(doc_name)
+count = 0
+total_tokens = 0
 for line in sys.stdin:
     line = line.strip()
     if not line:
@@ -39,11 +42,14 @@ for line in sys.stdin:
 
 
     tokens = line.split() # tokens
+    total_tokens += len(tokens)
 
     for token in tokens:
-        if token and token not in stopwords:
+        if token not in stopwords:
             print("{}\t{}".format(token, doc_name))
-
-
+        else:
+            count += 1
+i = count/total_tokens
+print(i)
 # if __name__ == "__main__":
 #     main()

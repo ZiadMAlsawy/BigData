@@ -169,7 +169,7 @@ MSYS_NO_PATHCONV=1 docker exec namenode bash -c "
 bash run_job.sh 1
 ```
 
-Time taken on one datanode: 11 seconds
+Time taken on one datanode: 12 seconds
 
 ---
 
@@ -243,8 +243,8 @@ After collecting T1, T2, T3:
 
 | Metric            | Formula      | Time Taken      |
 | :---------------- | :----------- | :-------------- |
-| Speedup (2 nodes) | S2 = T1 / T2 | 10 / 9 = 1.11x  |
-| Speedup (3 nodes) | S3 = T1 / T3 | 10 / 9 = 1.11x  |
+| Speedup (2 nodes) | S2 = T1 / T2 | 12 / 11 = 1.09x  |
+| Speedup (3 nodes) | S3 = T1 / T3 | 12 / 11 = 1.09x  |
 
 > **Note on results:** All containers run on the same physical machine, so
 > datanodes share CPU/RAM/disk. True linear speedup requires separate physical
