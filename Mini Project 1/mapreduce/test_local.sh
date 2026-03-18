@@ -1,8 +1,8 @@
 #!/bin/bash
 
 
-BOOK="../Mini Project 1/Books/1.txt"
-STOPWORDS="../Mini Project 1/stopwords.txt"
+BOOK="../Books/1.txt"
+STOPWORDS="../stopwords.txt"
 
 # Copy stopwords to current dir so mapper.py can find it by filename
 cp "$STOPWORDS" stopwords.txt

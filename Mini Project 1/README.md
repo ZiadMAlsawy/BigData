@@ -1,4 +1,4 @@
-# BigData — Distributed Reverse Index (Mini Project 1)
+# Distributed Reverse Index (Mini Project 1)
 
 A MapReduce-based reverse index over 20 Project Gutenberg books, running on a
 Dockerized Hadoop 3.2.1 cluster (1 namenode + up to 3 datanodes).
@@ -38,30 +38,32 @@ MSYS_NO_PATHCONV=1 docker exec namenode java -version
 ## Project Structure
 
 ```text
-BigData/
+Mini Project 1/
 ├── docker-compose.yml          # Hadoop cluster definition (namenode + 3 datanodes)
-├── setup_hdfs.sh               # One-time setup: start cluster, upload books to HDFS
 ├── run_job.sh                  # Submit the MapReduce job (accepts node count as arg)
-├── Mini Project 1/
-│   ├── Books/                  # 20 Project Gutenberg .txt books
-    ├── stopwords.txt           # Stop-words filter list
-    ├── mapreduce/
-        ├── mapper.py           # Hadoop Streaming mapper
-        ├── reducer.py          # Hadoop Streaming reducer
-        └── test_local.sh       # Local test (no Hadoop needed)
+├── stopwords.txt               # Stop-words filter list
+├── Books/                      # 20 Project Gutenberg .txt books
+├── mapreduce/
+│   ├── mapper.py               # Hadoop Streaming mapper
+│   ├── reducer.py              # Hadoop Streaming reducer
+│   └── test_local.sh           # Local test (no Hadoop needed)
+├── Digital_Librarian_Report.docx
+├── Big Data Analytics – Mini Project 1.pdf
+├── Final Report.pdf
+└── README.md
 ```
 
 ---
 
 ## Quick Start (run everything in order)
 
-### Step 1 — Clone / open the repo
+### Step 1 — Open the project folder
 
 ```bash
-cd BigData/
+cd "Mini Project 1/"
 ```
 
-All commands below assume you are in the `BigData/` root directory.
+All commands below assume you are in the `Mini Project 1/` directory.
 
 ---
 
@@ -99,12 +101,12 @@ Copy scripts and books into the namenode, then upload to HDFS:
 
 ```bash
 # Copy Python scripts and stopwords
-docker cp "Mini Project 1/stopwords.txt" namenode:/tmp/stopwords.txt
-docker cp "Mini Project 1/mapreduce/mapper.py" namenode:/tmp/mapper.py
-docker cp "Mini Project 1/mapreduce/reducer.py" namenode:/tmp/reducer.py
+docker cp stopwords.txt namenode:/tmp/stopwords.txt
+docker cp mapreduce/mapper.py namenode:/tmp/mapper.py
+docker cp mapreduce/reducer.py namenode:/tmp/reducer.py
 
-# Copy all books as a folder (avoids Windows path-with-spaces issues)
-docker cp "Mini Project 1/Books" namenode:/tmp/books
+# Copy all books as a folder
+docker cp Books namenode:/tmp/books
 
 # Fix Windows line endings, create HDFS directory, upload all books
 MSYS_NO_PATHCONV=1 docker exec namenode bash -c "
@@ -144,10 +146,10 @@ sleep 25
 MSYS_NO_PATHCONV=1 docker exec namenode hdfs dfsadmin -report 2>&1 | grep "Live datanodes"
 
 # 2. Re-copy files into the fresh namenode container
-docker cp "Mini Project 1/stopwords.txt" namenode:/tmp/stopwords.txt
-docker cp "Mini Project 1/mapreduce/mapper.py" namenode:/tmp/mapper.py
-docker cp "Mini Project 1/mapreduce/reducer.py" namenode:/tmp/reducer.py
-docker cp "Mini Project 1/Books" namenode:/tmp/books
+docker cp stopwords.txt namenode:/tmp/stopwords.txt
+docker cp mapreduce/mapper.py namenode:/tmp/mapper.py
+docker cp mapreduce/reducer.py namenode:/tmp/reducer.py
+docker cp Books namenode:/tmp/books
 
 # 3. Install Python3 (fresh container has none)
 MSYS_NO_PATHCONV=1 docker exec namenode bash -c "
@@ -228,7 +230,7 @@ Time taken on three datanodes: 11 seconds.
 To verify mapper and reducer logic on a single book before submitting to the cluster:
 
 ```bash
-cd "Mini Project 1/mapreduce/"
+cd mapreduce/
 bash test_local.sh
 ```
 
@@ -241,10 +243,10 @@ the first results to the terminal.
 
 After collecting T1, T2, T3:
 
-| Metric            | Formula      | Time Taken      |
-| :---------------- | :----------- | :-------------- |
-| Speedup (2 nodes) | S2 = T1 / T2 | 12 / 11 = 1.09x  |
-| Speedup (3 nodes) | S3 = T1 / T3 | 12 / 11 = 1.09x  |
+| Metric            | Formula       | Time Taken       |
+| :---------------- | :------------ | :--------------- |
+| Speedup (2 nodes) | S2 = T1 / T2  | 12 / 11 = 1.09x |
+| Speedup (3 nodes) | S3 = T1 / T3  | 12 / 11 = 1.09x |
 
 > **Note on results:** All containers run on the same physical machine, so
 > datanodes share CPU/RAM/disk. True linear speedup requires separate physical
