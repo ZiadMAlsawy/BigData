@@ -11,3 +11,10 @@ __pycache__/
 .cache/
 
 .venv/
+*.env
+*.aux
+*.log
+*.fdb_latexmk
+*.fls
+*.out
+*.gz
