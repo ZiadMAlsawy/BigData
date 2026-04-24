@@ -1,0 +1,645 @@
+\documentclass{article}
+\usepackage{graphicx} % Required for inserting images
+\usepackage{float}
+\usepackage{booktabs}
+\usepackage{multirow}
+\usepackage{array}
+\usepackage{xcolor}
+\usepackage{rotating}
+\title{Mini Project 2 Big Data Report}
+\author{Ziad Moutaz  202201252}
+\date{April 2026}
+
+\begin{document}
+
+\maketitle
+
+\section{Problem Statement}
+
+\section{Dataset Description}
+We used US Flight Delay and Cancellation Data from Kaggle, it contains 3M records, and it's schema is defined as in the following table:
+\begin{table}[H]
+\centering
+\begin{tabular}{|c|c|}
+\hline
+\textbf{Column Name} & \textbf{Data Type} \\
+\hline
+FL\_DATE & Date \\
+AIRLINE & String \\
+AIRLINE\_DOT & String \\
+AIRLINE\_CODE & String \\
+DOT\_CODE & Integer \\
+FL\_NUMBER & Integer \\
+ORIGIN & String \\
+ORIGIN\_CITY & String \\
+DEST & String \\
+DEST\_CITY & String \\
+CRS\_DEP\_TIME & Integer \\
+DEP\_TIME & Double \\
+DEP\_DELAY & Double \\
+TAXI\_OUT & Double \\
+WHEELS\_OFF & Double \\
+WHEELS\_ON & Double \\
+TAXI\_IN & Double \\
+CRS\_ARR\_TIME & Integer \\
+ARR\_TIME & Double \\
+ARR\_DELAY & Double \\
+CANCELLED & Double \\
+CANCELLATION\_CODE & String \\
+DIVERTED & Double \\
+CRS\_ELAPSED\_TIME & Double \\
+ELAPSED\_TIME & Double \\
+AIR\_TIME & Double \\
+DISTANCE & Double \\
+DELAY\_DUE\_CARRIER & Double \\
+DELAY\_DUE\_WEATHER & Double \\
+DELAY\_DUE\_NAS & Double \\
+DELAY\_DUE\_SECURITY & Double \\
+DELAY\_DUE\_LATE\_AIRCRAFT & Double \\
+
+
+
+\hline
+\end{tabular}
+\caption{Schema of Flights Dataset}
+\end{table}
+
+\subsection{Justification}
+This data is appropriate to be distributed processed due to the presence of 3 million records, which is efficient to be processed with the help of such frameworks as Spark to carry out complex operations (joins, aggregations, window functions, etc.). Moreover, it contains 32 mixed-columns with both numerical, categorical and date values, which can be helpful in testing Spark SQL and query optimization abilities. It also inherently supports join operations to dimension tables, like airlines and airports, and time-related capabilities allow more complex analytics, like window functions, moving averages, and cumulative computations.
+
+\section{Queries Implemented}
+
+\subsection{Q1}
+
+\subsubsection{SQL}
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.8\textwidth]{Q1 SQL.png}
+\caption{Q1 - SQL Implementation}
+\end{figure}
+
+\subsubsection{Dataframe}
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.8\textwidth]{Q1 DF.png}
+\caption{Q1 - DataFrame Implementation}
+\end{figure}
+
+\subsubsection{RDD}
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.8\textwidth]{Q1 RDD.png}
+\caption{Q1 - RDD Implementation}
+\end{figure}
+
+\subsubsection{Explain}
+
+\begin{figure}
+    \centering
+    \includegraphics[width=0.5\linewidth]{Q1 Explain.png}
+    \caption{Q1 Explain}
+    \label{fig:placeholder}
+\end{figure}
+
+
+% =========================
+
+\subsection{Q2}
+
+\subsubsection{SQL}
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.8\textwidth]{Q2 SQL.png}
+\caption{Q2 - SQL Implementation}
+\end{figure}
+
+\subsubsection{Dataframe}
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.8\textwidth]{Q2 DF.png}
+\caption{Q2 - DataFrame Implementation}
+\end{figure}
+
+\subsubsection{RDD}
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.8\textwidth]{Q2 RDD.png}
+\caption{Q2 - RDD Implementation}
+\end{figure}
+ \subsubsection{Explain}
+
+ \begin{figure}
+     \centering
+     \includegraphics[width=0.5\linewidth]{Q2 Explain.png}
+     \caption{Q2 Explain}
+     \label{fig:placeholder}
+ \end{figure}
+% =========================
+
+\subsection{Q3}
+
+\subsubsection{SQL}
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.8\textwidth]{Q3 SQL.png}
+\caption{Q3 - SQL Implementation}
+\end{figure}
+
+\subsubsection{Dataframe}
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.8\textwidth]{Q3 DF.png}
+\caption{Q3 - DataFrame Implementation}
+\end{figure}
+
+\subsubsection{RDD}
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.8\textwidth]{Q3 RDD.png}
+\caption{Q3 - RDD Implementation}
+\end{figure}
+
+\subsubsection{Q3 Explain}
+
+
+\begin{figure}
+    \centering
+    \includegraphics[width=0.5\linewidth]{Q3 Explain.png}
+    \caption{Q3 Explain}
+    \label{fig:placeholder}
+\end{figure}
+% =========================
+
+\subsection{Q4}
+
+\subsubsection{SQL}
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.8\textwidth]{Q4 SQL.png}
+\caption{Q4 - SQL Implementation}
+\end{figure}
+
+\subsubsection{Dataframe}
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.8\textwidth]{Q4 DF.png}
+\caption{Q4 - DataFrame Implementation}
+\end{figure}
+
+\subsubsection{RDD}
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.8\textwidth]{Q4 RDD.png}
+\caption{Q4 - RDD Implementation}
+\end{figure}
+\subsubsection{Q4 Explain}
+
+\begin{figure}
+    \centering
+    \includegraphics[width=0.5\linewidth]{Q4 Explain.png}
+    \caption{Q4 Explain}
+    \label{fig:placeholder}
+\end{figure}
+
+
+% =========================
+
+\subsection{Q5}
+
+\subsubsection{SQL}
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.8\textwidth]{Q5 SQL.png}
+\caption{Q5 - SQL Implementation}
+\end{figure}
+
+\subsubsection{Dataframe}
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.8\textwidth]{Q5 DF.png}
+\caption{Q5 - DataFrame Implementation}
+\end{figure}
+
+\subsubsection{RDD}
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.8\textwidth]{Q5 RDD.png}
+\caption{Q5 - RDD Implementation}
+\end{figure}
+\subsubsection{Q5 Explain}
+
+
+\begin{figure}
+    \centering
+    \includegraphics[width=0.5\linewidth]{Q5 Explain.png}
+    \caption{Q5 Explain}
+    \label{fig:placeholder}
+\end{figure}
+% =========================
+
+\subsection{Q6}
+
+\subsubsection{SQL}
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.8\textwidth]{Q6 SQL.png}
+\caption{Q6 - SQL Implementation}
+\end{figure}
+
+\subsubsection{Dataframe}
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.8\textwidth]{Q6 DF.png}
+\caption{Q6 - DataFrame Implementation}
+\end{figure}
+
+\subsubsection{RDD}
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.8\textwidth]{Q6 RDD.png}
+\caption{Q6 - RDD Implementation}
+\end{figure}
+
+\subsubsection{Q6 Explain}
+
+
+\begin{figure}
+    \centering
+    \includegraphics[width=0.5\linewidth]{Q6 Explain.png}
+    \caption{Q6 Explain}
+    \label{fig:placeholder}
+\end{figure}
+
+% =========================
+
+\subsection{Q7}
+
+\subsubsection{SQL}
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.8\textwidth]{Q7 SQL.png}
+\caption{Q7 - SQL Implementation}
+\end{figure}
+
+\subsubsection{Dataframe}
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.8\textwidth]{Q7 DF.png}
+\caption{Q7 - DataFrame Implementation}
+\end{figure}
+
+\subsubsection{RDD}
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.8\textwidth]{Q7 RDD.png}
+\caption{Q7 - RDD Implementation}
+\end{figure}
+
+\subsubsection{Q7 Explain}
+
+\begin{figure}
+    \centering
+    \includegraphics[width=0.5\linewidth]{Q7 Explain.png}
+    \caption{Q7 Explain}
+    \label{fig:placeholder}
+\end{figure}
+
+% =========================
+
+\subsection{Q8}
+
+\subsubsection{SQL}
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.8\textwidth]{Q8 SQL.png}
+\caption{Q8 - SQL Implementation}
+\end{figure}
+
+\subsubsection{Dataframe}
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.8\textwidth]{Q8 DF.png}
+\caption{Q8 - DataFrame Implementation}
+\end{figure}
+
+\subsubsection{RDD}
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.8\textwidth]{Q8 RDD.png}
+\caption{Q8 - RDD Implementation}
+\end{figure}
+\subsubsection{Q8 Explain}
+
+\begin{figure}
+    \centering
+    \includegraphics[width=0.5\linewidth]{Q8 Explain.png}
+    \caption{Q8 Explain}
+    \label{fig:placeholder}
+\end{figure}
+
+% =========================
+
+\subsection{Q9}
+
+\subsubsection{SQL}
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.8\textwidth]{Q9 SQL.png}
+\caption{Q9 - SQL Implementation}
+\end{figure}
+
+\subsubsection{Dataframe}
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.8\textwidth]{Q9 DF.png}
+\caption{Q9 - DataFrame Implementation}
+\end{figure}
+
+\subsubsection{RDD}
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.8\textwidth]{Q9 RDD.png}
+\caption{Q9 - RDD Implementation}
+\end{figure}
+
+\subsubsection{Q9 Explain}
+
+\begin{figure}
+    \centering
+    \includegraphics[width=0.5\linewidth]{Q9 Explain.png}
+    \caption{Q9 Explain}
+    \label{fig:placeholder}
+\end{figure}
+
+% =========================
+
+\subsection{Q10}
+
+\subsubsection{SQL}
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.8\textwidth]{Q10 SQL.png}
+\caption{Q10 - SQL Implementation}
+\end{figure}
+
+\subsubsection{Dataframe}
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.8\textwidth]{Q10 DF.png}
+\caption{Q10 - DataFrame Implementation}
+\end{figure}
+
+\subsubsection{RDD}
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.8\textwidth]{Q10 RDD.png}
+\caption{Q10 - RDD Implementation}
+\end{figure}
+\subsubsection{Q10 Explain}
+
+\begin{figure}
+    \centering
+    \includegraphics[width=0.5\linewidth]{Q10 Explain.png}
+    \caption{Q10 Explain}
+    \label{fig:placeholder}
+\end{figure}
+% =========================
+
+\subsection{Q11}
+
+\subsubsection{SQL}
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.8\textwidth]{Q11 SQL.png}
+\caption{Q11 - SQL Implementation}
+\end{figure}
+
+\subsubsection{Dataframe}
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.8\textwidth]{Q11 DF.png}
+\caption{Q11 - DataFrame Implementation}
+\end{figure}
+
+\subsubsection{RDD}
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.8\textwidth]{Q11 RDD.png}
+\caption{Q11 - RDD Implementation}
+\end{figure}
+\subsubsection{Q11 Explain}
+
+\begin{figure}
+    \centering
+    \includegraphics[width=0.5\linewidth]{Q10 Explain.png}
+    \caption{Q11 Explain}
+    \label{fig:placeholder}
+\end{figure}
+
+% =========================
+
+\subsection{Q12}
+
+\subsubsection{SQL}
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.8\textwidth]{Q12 SQL.png}
+\caption{Q12 - SQL Implementation}
+\end{figure}
+
+\subsubsection{Dataframe}
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.8\textwidth]{Q12 DF.png}
+\caption{Q12 - DataFrame Implementation}
+\end{figure}
+
+\subsubsection{RDD}
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.8\textwidth]{Q12 RDD.png}
+\caption{Q12 - RDD Implementation}
+\end{figure}
+\subsubsection{Q12 Explain}
+\begin{figure}
+    \centering
+    \includegraphics[width=0.5\linewidth]{Q12 Explain.png}
+    \caption{Q12 Explain}
+    \label{fig:placeholder}
+\end{figure}
+\section{Execution Plan Comparison}
+\subsection{Q1}
+DataFrame/SQL have the advantage of Catalyst Optimizer which combines filters as well as eliminating duplicative operations.
+Predicate pushdown enables filtering on file readings, which minimizes I/O.
+Physical plan demonstrates effective implementation in one stage of filtering.
+There is no shuffle because of no aggregation or join.
+This is more optimized than RDD since RDD does not use auto query optimization.
+\subsection{Q2}
+Catalyst Optimizer is used by DataFrame/SQL to select only the columns necessary, minimizing I/O.
+The strategy of aggregation is carried out in two phases (partial + final), which enhances performance.
+GRoup BY requires Shuffle (Exchange), and thus serves as the limiting component.
+HashAggregate is applied in the case of efficient grouping.
+The execution can also be optimized with adaptive execution.
+RDD, on the other hand, does not use column pruning or optimized aggregation strategies automatically.
+\subsection{Q3}
+The generated execution plans based on DataFrame and SQL API in Apache Spark have substantial optimizations over the RDD approach.
+
+To begin with, during the logical plan stage, each approach begins by a direct translation of the query. All DataFrame and SQL queries, though, get transformed by the Catalyst optimizer whereas RDD operations are not automatically optimized.
+
+Spark makes a number of important optimizations in the optimized logical plan:
+Column pruning minimizes the columns that are accessed on disk (e.g. AIRLINECODE, ORIGIN, ARRDELAY and calculated MONTH only).
+Unnecessary projection procedures are done away with.
+Derived columns like MONTH are computed prior to aggregation to eliminate the repetition of calculations.
+
+Spark applies a two stage aggregation strategy in the physical plan:
+Each partition is partially aggregated to minimize the size of the data.
+The Exchange operation (shuffle) rearranges data on the basis of grouping keys.
+Results of partitions are combined in a final aggregation.
+
+The shuffle operation is the most costly operation and its cost depends on the number of grouping keys. As an example, partitioning by AIRLINE_CODE, ORIGIN, and MONTH would need more complex partitioning than partitioning by a single key.
+
+Also, DataFrame and SQL execution are supported with Adaptive Query Execution that dynamically optimizes the execution during execution.
+
+Conversely, RDD API lacks support of Catalyst optimization, column pruning and automatic query optimization. Every transformation is done as specified by the user, which makes RDD less productive when one wants to do complex analytical queries.
+
+On the whole, DataFrame and SQL APIs are much more efficient as they are optimized automatically, their aggregation techniques are more efficient, and their I/O activities are fewer.
+\subsection{Q4}
+The implementation schemes created with DataFrame and SQL APIs in Apache Spark show considerable optimizations over the RDD implementation.
+
+The first stage in the logical plan level is the representation of all the queries in a series of operations including projection, filtering, aggregation, sorting, and limiting. But the DataFrame and SQL queries are optimized using catalyst optimizer whereas the RDD transformations are not optimized automatically.
+
+Spark makes multiple important optimizations in the optimized logical plan:
+Column pruning eliminates the columns which are read in disk (e.g. only ORIGIN, DEST and ARR_DELAY are kept).
+Duplicated projections are eliminated in order to simplify execution.
+Constant expressions are simplified (e.g., unnecessary casts are eliminated).
+Derived operations are restructured to be efficient.
+
+Spark uses a two-step strategy in aggregation in the physical plan:
+Partitions are aggregated partially in each partition.
+A shuffle operation is a data redistribution operation that operates by grouping keys.
+Final aggregation sums up partition results.
+
+The most costly operation is the shuffle (Exchange) operation, particularly in cases where it is grouped by more than one key, e.g., ORIGIN and DEST.
+
+Also, Spark implements a significant optimization to ORDER BY with LIMIT queries. It does not involve any sorting, instead it utilizes the TakeOrderedAndProject operator, which is an efficient way of retrieving the top N results without sorting the entire data.
+
+Post-aggregating filters (e.g., flights > 100) cannot be pushed down, and are run after grouping.
+
+Conversely, the RDD API is not Catalyst optimized, does not support column pruning and does not automatically use optimized aggregation or Top-N strategies. Consequently, DataFrame and SQL APIs are much faster in performance due to lower I/O, effective aggregation, and improved execution planning.
+\subsection{Q5}
+The implementation plan of the window function query is more elaborate in terms of execution strategy as compared to simple filtering query and aggregation query.
+
+First, Spark calculates the average delay per day based on a groupBy operation on AIRLINECODE and FLDATE. The following step applies a two-phase aggregation approach where partial aggregation is performed and then there is a shuffle and a final aggregation.
+
+Then, Spark uses a window function to calculate a 7-day moving average (ma7). The row-based frame (ROWS BETWEEN 6 PRECEDING and CURRENT ROW) is used to define the window, which is partitioned by AIRLINECODE and ordered by FLDATE.
+
+Spark uses a number of optimizations in the optimized logical plan:
+Column pruning displays the data in the form of FLDATE, AIRLINECODE and ARR-Delay.
+Filter pushdown makes sure that the null values of ARR_DELAY are eliminated early when scanning the data.
+Superfluous projections are removed.
+
+There are several costly operations in the physical plan:
+Aggregation of a shuffle on AIRLINECODE and FLDate.
+A second shuffle according to AIRLINE_CODE to partition windows.
+AIRLINECODE, FLDATE A sort step to facilitate ordered window computation.
+
+The window operation is implemented after sorting and streams the rows in each partition in a sequence in order to calculate the moving average.
+
+The two requirements of data redistribution and sorting make window functions more computationally costly than other queries. Nonetheless, this is optimized by Spark using optimized execution plans and partial aggregation approaches.
+
+By contrast, RDD API lacks in-built support of window functions or automatic optimization, and such computations are much more complicated, and less efficient, when they are done manually.
+\subsection{Q6}
+The implementation of the cumulative window query requires aggregation and window processing and thus it is more complicated to implement compared to the regular aggregation queries.
+
+To begin with, Spark calculates the number of cancellations in a day by aggregating data based on AIRLINECODE and FLDATE. This aggregation is based on a two step approach whereby there is a partial aggregation and subsequent shuffle and final aggregation.
+
+Then the window operation is used to calculate the total amount of daily cancellations. The window is specified by a row based frame (ROWS BETWEEN UNBOUNDED PRECEDING and CURRENT ROW) partitioned by AIRLINECODE and sorted by FLDATE. This leads to accumulation of cancelations per airline with time.
+
+Spark does column pruning in the optimized logical plan, and only the following columns are chosen: FLDATE, AIRLINECODE, and CANCELLED, minimizing I/O overhead. The pipeline of execution is streamlined to incorporate only the necessary activities.
+
+Execution in the physical plan involves a number of costly steps:
+Aggregation on a shuffle of AIRLINECODE and FLDate.
+A second recombination on the basis of AIRLINE_CODE to partition the windows.
+Sort of AIRLINECODE and FLDATE to have the right ordering of data to compute windows.
+
+Cumulative window function works on rows in a given partition one at a time keeping a running sum. Cumulative windows can be computationally expensive compared to fixed-size window functions because, as a window expands, additional computation is required.
+
+In contrast to filter-based queries, there is no predicate pushdown, and the data is read in CSV format, which is not optimized in columns.
+
+In general, although Spark can effectively run the query with optimized planning and aggregation plans, the use of window functions is still computationally expensive because it requires sorting and redistribution of data.
+\subsection{Q7}
+The SQL query that is used to implement the ranking query is a combination of aggregations and window processing and as such is computationally expensive.
+
+To compute the on-time rate of each airline, Spark initially groups data by YEAR and MONTH and further groups by AIRLINE_CODE. On-time rate is computed as the proportion of the flights that arrive within 15 minutes or less to the total amount of flights. This aggregation is performed through a two-step approach wherein partial aggregation is performed then a shuffle and final aggregation.
+
+Spark then implements a ranking window operation on RANK with a partitioning operation based on the YEAR and MONTH and sorting by ontimerate in descending order. This gives each airline a rank in each month in terms of performance.
+
+Spark optimizes a number of things in the optimized logical plan:
+Column pruning will eliminate all the data except the necessary columns (AIRLINECODE, ARRDELAY, and calculated YEAR and MONTH).
+Derived columns are also calculated at the start to enhance efficiency.
+Filter pushdown eliminates the null values of ARR_DELAY when reading data.
+Simplification of expressions minimizes unwarranted casting.
+
+Various costly operations are involved in the physical plan:
+Aggregation using YEAR, MONTH and AIRLINE_CODE.
+A second shuffle using YEAR and MONTH to partition windows.
+A sorting of YEAR, MONTH and ontimerate to aid ranking.
+
+The window operation is accomplished following the sorting and allocates ranks in each partition.
+
+Ranking queries are more costly than simpler queries because of the aggregation, redistribution of data, sorting, and window computation. Nevertheless, Spark is efficient in terms of execution optimization with the help of Catalyst and adaptive query execution.
+
+By contrast, RDD API lacks built-in window operations and automatic optimization, so such calculations are much less efficient than they would be in hand-written form.
+\subsection{Q8}
+To answer the query asking which airlines have above-average arrival delays, the Catalyst optimizer of Spark converts the initial SQL in three phases: an unresolved plan, an analyzed plan with resolved schemas, and an optimal plan, which eliminates all the unnecessary columns except the two required columns (AIRLINE_CODE and ARR_DELAY). The final physical plan has a hashpartitioning of the per-airline average, then runs the scalar subquery once using an Exchange SinglePartition and uses AdaptiveSparkPlan to run-time tune. The DataFrame/SQL implementation is faster than a hypothetical imperative RDD implementation, which would scan all columns, transform data into Java objects, and would need manual optimizations, with a typical 3-30x faster performance and being much more compact.
+\subsection{Q9}
+This query plan contains an example of a broadcast hash join between the flights table (alias f) and a de-duplicated airline reference table (alias a), and an aggregate on airline name. The optimizer used by Catalyst filters out all the redundant columns at the very beginning leaving only the AIRLINE_CODE, ARR_DELAY and the name of the airline (AIRLINE#1034) on the right side and the isnotnull filters to the file scans. The physical plan can be executed as a BroadcastHashJoin, in which the reduced airline data (following a HashAggregate to deduplicate by AIRLINE_CODE, AIRLINE, and DOT_CODE) is sent using BroadcastExchange to all mappers instead of costly shuffling of the large flights table. The last aggregation on AIRLINE#1034 is a two-stage HashAggregate (partial followed by final) where the hash partitioning is done in 200 partitions. This Catalyst-based plan has much lower I/O (just 3 column reads on the right side and 2 on the left) and uses the whole-stage code generation to do the hash join and aggregate operations, as compared to an RDD implementation, which would need manual broadcast, explicit deduplication, and full-column scans.
+\subsection{Q10}
+
+\subsection{Q11}
+This plan demonstrates a query that summarizes the data on delay causes by airline, and then determines the leading (maximum) delay cause per carrier. The plan being parsed begins with an aggregation which adds up five different delay categories (DELAY_DUE_CARRIER, WEATHER, NAS, SECURity, LATE-AIRCRAFT) with the summation being grouped by AIRLINE-CODE, and then an array-max operation on an array of structs is performed to get the highest total delay cause. The optimizer of Catalyst removes the redundant projections in the plan until the six columns needed by the plan (AIRLINE_CODE and the five delay cause fields) appear, removing all other columns at an earlier stage. It is implemented using the physical plan as a two-step HashAggregate using hashpartitioning with 200 partitions to compute the partial sums locally and shuffle them using the AIRLINE_CODE to complete the aggregation. This is followed by the array_max operation of the struct array which is a projector following aggregation. This Catalyst-generated plan has the advantage of bilateral aggregation (fast with Tungsten) and the generation of an entire stage of code to compute the maximum struct by value and the array of struct operation, as well as automatic column pruning, which saves I/O by reading six columns instead of the entire 25+ column schema.
+\subsection{Q12}
+This query finds route-specific delay outliers by only looking at flights where the arrival delay is more than three standard deviations above the route mean. Catalyst improves the plan by combining the AVG and STDDEV window functions into one window operation over the same (ORIGIN, DEST) partition. This cuts down on unnecessary data scans. The physical plan runs a hash-partitioned exchange by route, then sorts the data and uses a combined window operator, and finally applies the outlier filter. This DataFrame/SQL plan is better than an RDD approach, which would need multiple shuffles and manual aggregation. It uses single-pass window computation, column pruning, and whole-stage code generation.
+\section{Performance Comparison Table}
+\begin{table}[htbp]
+\centering
+\caption{Performance Comparison: RDD vs DataFrame vs SQL}
+\begin{tabular}{@{}lccccc@{}}
+\toprule
+\multirow{2}{*}{Query} & \multicolumn{3}{c}{Time (seconds)} & \multirow{2}{*}{Speedup (DF/RDD)} \\
+\cmidrule(lr){2-4}
+ & RDD & DataFrame & SQL & \\
+\midrule
+Q1: Filter & 101.32 & 10.23 & 10.48 & 9.9$\times$ \\
+Q2: Aggregate & 59.88 & 8.59 & 7.41 & 7.0$\times$ \\
+Q3: Multi-group & 58.32 & 14.37 & 12.85 & 4.1$\times$ \\
+Q4: Top 20 Routes & 47.31 & 11.15 & 10.07 & 4.2$\times$ \\
+Q5: Moving Avg & 50.61 & 12.68 & 10.67 & 4.0$\times$ \\
+Q6: Cumulative & 45.17 & 10.85 & 11.16 & 4.2$\times$ \\
+Q7: Rank & 50.52 & 10.78 & 11.15 & 4.7$\times$ \\
+Q8: Subquery & 78.13 & 15.70 & 15.64 & 5.0$\times$ \\
+Q9: Broadcast Join & 49.11 & 17.81 & 16.34 & 2.8$\times$ \\
+Q10: SortMerge Join & 66.05 & 23.34 & 24.67 & 2.8$\times$ \\
+Q11: Root Cause & 56.95 & 9.05 & 6.96 & 6.3$\times$ \\
+Q12: Anomaly & 92.63 & 19.46 & 16.68 & 4.8$\times$ \\
+\midrule
+\multicolumn{5}{c}{\textbf{Average Speedup: DataFrame vs RDD}} \\
+\multicolumn{5}{c}{\textbf{5.1$\times$ faster}} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+DataFrame is the winner API because:
+
+5x faster than RDD (same as SQL)
+
+More maintainable than SQL strings
+
+Same optimizations as SQL
+
+Better for complex pipelines (loops, conditions, UDFs)
+
+Consistent performance across all query types
+\section{Final Insights}
+
+\end{document}
