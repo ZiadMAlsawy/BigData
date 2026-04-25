@@ -106,7 +106,7 @@ This data is appropriate to be distributed processed due to the presence of 3 mi
 \caption{Q1 - RDD Implementation}
 \end{figure}
 
-\subsubsection{Explain}
+\subsubsection{Q1 Explain}
 
 The \textbf{parsed logical plan} expresses Q1 as a chain of four \texttt{Filter} nodes (long-haul, severe arrival delay, winter month, non-cancelled) above a CSV \texttt{Relation}. The \textbf{optimized logical plan} collapses the four predicates into a single conjunction and adds \texttt{isnotnull} guards. The \textbf{physical plan} is a single-stage \texttt{FileScan csv} with a \texttt{PushedFilters} clause carrying every predicate, followed by an in-memory \texttt{Project} of three columns -- no \texttt{Exchange}, no shuffle.
 
@@ -142,7 +142,7 @@ The \textbf{parsed logical plan} expresses Q1 as a chain of four \texttt{Filter}
 \includegraphics[width=0.8\textwidth]{Q2 RDD.png}
 \caption{Q2 - RDD Implementation}
 \end{figure}
- \subsubsection{Explain}
+\subsubsection{Q2 Explain}
 
 The \textbf{parsed logical plan} groups the full row-set by \texttt{AIRLINE\_CODE} and computes \texttt{avg(ARR\_DELAY)}. The \textbf{optimized logical plan} prunes the schema down to the two needed columns and pushes an \texttt{isnotnull(ARR\_DELAY)} filter into the file scan. The \textbf{physical plan} adopts the canonical two-stage \texttt{HashAggregate}: a partial aggregation per partition, an \texttt{Exchange hashpartitioning(AIRLINE\_CODE, 200)} shuffle, then a final \texttt{HashAggregate} to merge the partials.
 
@@ -462,12 +462,35 @@ With \texttt{autoBroadcastJoinThreshold = -1}, the \textbf{parsed logical plan} 
 
 The \textbf{parsed logical plan} sums five delay-cause columns per \texttt{AIRLINE\_CODE} then constructs an array of (cause, total) structs and applies \texttt{array\_max} to surface the dominant cause. The \textbf{optimized logical plan} prunes the schema to just the six required columns (key + five cause sums), eliminating the other 26. The \textbf{physical plan} runs a two-stage \texttt{HashAggregate} via \texttt{Exchange hashpartitioning(AIRLINE\_CODE, 200)}; the array-construction and \texttt{array\_max} expression compile down inside the post-aggregate \texttt{Project} via whole-stage codegen, costing no additional shuffle.
 
-\begin{figure}[H]
-    \centering
-    \includegraphics[width=0.95\linewidth]{Q10 Explain.png}
-    \caption{Q11 Explain (screenshot reused -- Q11 .explain output structurally identical to Q10's two-stage HashAggregate after the Catalyst-pruned scan; see prose above for Q11-specific operators)}
-    \label{fig:q11-explain}
-\end{figure}
+Below is the relevant portion of the captured \texttt{.explain(True)} output (full plan in \texttt{scripts/logs/q11\_root\_cause.log}). Note how Catalyst prunes 26 of 32 columns at the file scan and folds the five \texttt{sum} aggregations into one \texttt{HashAggregate}, with \texttt{array\_max} compiled into the post-aggregate \texttt{Project} -- no additional shuffle.
+
+\begin{footnotesize}
+\begin{verbatim}
+== Optimized Logical Plan ==
+Project [AIRLINE_CODE, DELAY_DUE_CARRIER, DELAY_DUE_WEATHER, DELAY_DUE_NAS,
+        DELAY_DUE_SECURITY, DELAY_DUE_LATE_AIRCRAFT,
+        array_max(array(struct(v, ..., k, DELAY_DUE_CARRIER), ...)).k AS top_cause]
++- Aggregate [AIRLINE_CODE], [AIRLINE_CODE, sum(DELAY_DUE_CARRIER), sum(...)]
+   +- Project [AIRLINE_CODE, DELAY_DUE_CARRIER, DELAY_DUE_WEATHER, DELAY_DUE_NAS,
+               DELAY_DUE_SECURITY, DELAY_DUE_LATE_AIRCRAFT]
+      +- Relation [<32 columns>] csv
+
+== Physical Plan ==
+AdaptiveSparkPlan isFinalPlan=false
++- Project [...array_max(...).k AS top_cause]
+   +- HashAggregate(keys=[AIRLINE_CODE], functions=[sum(...) x5])
+      +- Exchange hashpartitioning(AIRLINE_CODE, 200), ENSURE_REQUIREMENTS
+         +- HashAggregate(keys=[AIRLINE_CODE],
+                          functions=[partial_sum(...) x5])
+            +- FileScan csv [AIRLINE_CODE, DELAY_DUE_CARRIER, DELAY_DUE_WEATHER,
+                             DELAY_DUE_NAS, DELAY_DUE_SECURITY,
+                             DELAY_DUE_LATE_AIRCRAFT]
+               Batched: false, ReadSchema: struct<AIRLINE_CODE:string,
+               DELAY_DUE_CARRIER:double, DELAY_DUE_WEATHER:double,
+               DELAY_DUE_NAS:double, DELAY_DUE_SECURITY:double,
+               DELAY_DUE_LATE_AIRCRAFT:double>
+\end{verbatim}
+\end{footnotesize}
 
 % =========================
 
@@ -505,28 +528,28 @@ The \textbf{parsed logical plan} attaches \texttt{AVG} and \texttt{STDDEV} windo
 \end{figure}
 \section{Optimization Benchmarks}
 
-To address the rubric's requirement to evaluate the impact of caching, file format, partition pruning, and parallelism, we measured each lever in isolation against the same baseline DataFrame queries (Q2 and Q3). All numbers below were captured directly from the notebook (Section~4.1--4.4) on the same \texttt{local[4]} cluster used throughout the benchmark.
+To address the rubric's requirement to evaluate the impact of caching, file format, partition pruning, and parallelism, we measured each lever in isolation against the same baseline DataFrame queries (Q2 and Q3). All numbers below were captured by re-running the dedicated optimization scripts (\texttt{scripts/optimization/}) on the same \texttt{local[4]} cluster used throughout the benchmark.
 
 \subsection{Caching impact (Q2)}
 The first run of Q2 against the raw CSV pays the full deserialization cost. We then call \texttt{flights.cache()}, materialize it with a \texttt{count()}, and re-run Q2 against the in-memory columnar representation.
 
 \begin{table}[H]
 \centering
-\caption{Caching impact -- Q2 (\texttt{avg(ARR\_DELAY)} per airline)}
+\caption{Caching impact -- Q2 (per-airline aggregation)}
 \begin{tabular}{@{}lcc@{}}
 \toprule
 \textbf{Configuration} & \textbf{Time (s)} & \textbf{Speedup} \\
 \midrule
-Cold run (CSV, uncached)              & 8.590 & 1.00$\times$ \\
-Warm run (\texttt{.cache()}, in-mem)  & 1.500 & \textbf{5.73$\times$} \\
+Cold run (CSV, uncached)              & 5.082 & 1.00$\times$ \\
+Warm run (\texttt{.cache()}, in-mem)  & 0.376 & \textbf{13.50$\times$} \\
 \bottomrule
 \end{tabular}
 \end{table}
 
-The 5.7$\times$ speedup confirms that for any query re-executed in the same session (e.g., dashboards, iterative ML), \texttt{cache()} eliminates the dominant cost -- CSV parsing -- and leaves only the aggregation shuffle.
+The 13.5$\times$ speedup confirms that for any query re-executed in the same session (e.g., dashboards, iterative ML), \texttt{cache()} eliminates the dominant cost -- CSV parsing -- and leaves only the aggregation shuffle.
 
 \subsection{File format: CSV vs.\ Parquet (Q3)}
-We wrote the dataset as \texttt{YEAR}-partitioned Parquet and re-ran Q3 (3-key group-by) against both formats. \emph{Both} runs occurred after caching effects were neutralized so the comparison isolates the storage layer alone.
+We wrote the dataset as \texttt{YEAR}-partitioned Parquet and re-ran Q3 (3-key group-by) against both formats.
 
 \begin{table}[H]
 \centering
@@ -535,34 +558,34 @@ We wrote the dataset as \texttt{YEAR}-partitioned Parquet and re-ran Q3 (3-key g
 \toprule
 \textbf{Configuration} & \textbf{Time (s)} & \textbf{Speedup} \\
 \midrule
-CSV     & 2.839 & 1.00$\times$ \\
-Parquet (\texttt{partitionBy=YEAR}) & 3.137 & 0.91$\times$ \\
+CSV     & 5.820 & 1.00$\times$ \\
+Parquet (\texttt{partitionBy=YEAR}) & 1.020 & \textbf{5.71$\times$} \\
 \bottomrule
 \end{tabular}
 \end{table}
 
-Counter-intuitively Parquet was marginally slower here. The reason is that Q3 reads three of the four needed columns and groups on every row -- there is no filter to push down, so the columnar I/O advantage shrinks while the Parquet decoder pays a small fixed setup cost on a single-node executor. The advantage shifts decisively toward Parquet when filters \emph{are} present, as the partition-pruning experiment below shows.
+Parquet delivers a 5.7$\times$ speedup on Q3 even with no filter present. The columnar layout lets Spark read only the three columns the query touches (\texttt{AIRLINE\_CODE}, \texttt{ORIGIN}, \texttt{ARR\_DELAY}) instead of decoding all 32 CSV columns row by row, and the binary encoding skips the per-row text-to-double parsing step. The advantage grows further when filters are present, as the partition-pruning experiment below shows.
 
 \subsection{Partition pruning (Parquet, \texttt{YEAR=2022})}
-With the dataset partitioned by \texttt{YEAR}, a filter on the partition column lets Spark skip entire directories at scan time -- visible in the physical plan's \texttt{PartitionFilters: [(YEAR=2022)]}.
+With the dataset partitioned by \texttt{YEAR}, a filter on the partition column lets Spark skip entire directories at scan time -- visible in the physical plan's \texttt{PartitionFilters: [isnotnull(YEAR), (YEAR = 2022)]}.
 
 \begin{table}[H]
 \centering
 \caption{Partition pruning -- count of records read}
 \begin{tabular}{@{}lccc@{}}
 \toprule
-\textbf{Query} & \textbf{Time (s)} & \textbf{Rows scanned} & \textbf{I/O reduction} \\
+\textbf{Query} & \textbf{Time (s)} & \textbf{Rows returned} & \textbf{I/O reduction} \\
 \midrule
-Full scan (no \texttt{YEAR} filter) & 0.225 & 3{,}000{,}000 & baseline \\
-Pruned scan (\texttt{YEAR=2022})    & 0.261 & 687{,}860     & \textbf{4.4$\times$ less data} \\
+Full scan (no \texttt{YEAR} filter) & 0.328 & 3{,}000{,}000 & baseline \\
+Pruned scan (\texttt{YEAR=2022})    & 1.128 & 687{,}860     & \textbf{4.4$\times$ less data} \\
 \bottomrule
 \end{tabular}
 \end{table}
 
-Wall-clock time is similar because the dataset fits comfortably on one machine; on a multi-node cluster the 4.4$\times$ reduction in bytes-read would translate to a proportional reduction in network and disk I/O, which is the primary scalability lever for time-partitioned analytics workloads.
+Note that the wall-clock numbers above are inverted: the full \texttt{count()} on the partitioned Parquet runs against file-level metadata only and never reads row data, while the pruned query actually deserializes the 2022 partition. The optimization is nevertheless real -- it is visible in the physical plan and would translate to a $4.4\times$ reduction in bytes shuffled and processed under any non-trivial aggregation or filter on a multi-node cluster.
 
 \subsection{Scalability -- shuffle.partitions sweep (Q3)}
-Holding the cluster fixed at \texttt{local[4]}, we swept \texttt{spark.sql.shuffle.partitions} across four values to characterize Spark's sensitivity to this parameter.
+Holding the cluster fixed at \texttt{local[4]} (with the dataset cached so I/O is removed from the comparison), we swept \texttt{spark.sql.shuffle.partitions} across four values to characterize Spark's sensitivity to this parameter.
 
 \begin{table}[H]
 \centering
@@ -571,15 +594,15 @@ Holding the cluster fixed at \texttt{local[4]}, we swept \texttt{spark.sql.shuff
 \toprule
 \textbf{shuffle.partitions} & \textbf{Time (s)} \\
 \midrule
-8   & 1.748 \\
-50  & \textbf{1.717} \\
-200 (default) & 3.401 \\
-400 & 2.046 \\
+8             & 1.031 \\
+50            & \textbf{0.508} \\
+200 (default) & 0.520 \\
+400           & 0.575 \\
 \bottomrule
 \end{tabular}
 \end{table}
 
-Observations: (1) the Spark default of 200 partitions is markedly suboptimal for this workload because each partition processes too few rows, magnifying task-scheduling overhead; (2) \texttt{shuffle.partitions=50} is the sweet spot at this data size, roughly 2$\times$ faster than the default; (3) at 400 partitions, time recovers some ground because work is more evenly spread across the four executor cores. The takeaway aligns with the standard Spark guideline: target $\sim$128~MB per post-shuffle partition, not blindly 200 partitions for every workload. Adaptive Query Execution (AQE) addresses this automatically when enabled by coalescing partitions at runtime.
+Observations: (1) at 8 partitions the executor cores ($4$) cannot absorb any extra parallelism, but each partition handles a large block of work, doubling wall-clock time; (2) from 50 partitions onward the runtime plateaus around $0.5$~s because the 4-core local cluster simply cannot exploit more concurrency; (3) the default of 200 sits at the same plateau but pays a small overhead from scheduling many tiny tasks. On a real multi-node cluster the curve would shift -- more partitions are productive when more cores are available. The takeaway aligns with the standard Spark guideline: target $\sim$128~MB per post-shuffle partition, not blindly 200 for every workload. Adaptive Query Execution (enabled in our config) addresses this automatically by coalescing partitions at runtime.
 
 \section{Execution Plan Comparison}
 \subsection{Q1}
@@ -717,7 +740,7 @@ In the \textbf{optimized logical plan}, Catalyst restructures the plan to push f
 
 The \textbf{physical plan} shows the classic sort-merge join pattern: both sides are hash-partitioned by \texttt{ORIGIN} into 200 partitions (Exchange hashpartitioning), then each partition is sorted on the join key (\texttt{ORIGIN}), and finally a SortMergeJoin operator merges the two sorted streams. A two-stage HashAggregate (partial then final) follows the join to compute the group averages. This results in \textbf{two separate shuffle stages} -- one for partitioning before the join and one for the final aggregation grouping -- making Q10 the most shuffle-intensive query in the benchmark.
 
-Comparing to Q9 (broadcast join): Q10 takes approximately $23$\,s versus $18$\,s for the DataFrame version, confirming the cost of the extra shuffle. The RDD implementation of Q10 uses a manual \texttt{join()} on paired RDDs, which also incurs a full shuffle but without the benefit of whole-stage code generation or Tungsten off-heap memory management, leading to a $2.8\times$ slowdown relative to the DataFrame API.
+Comparing to Q9 (broadcast join): Q10 takes $8.85$~s in the DataFrame API versus $8.73$~s for Q9 -- almost identical wall-clock once Adaptive Query Execution coalesces post-shuffle partitions, but the physical plans diverge sharply (one shuffle eliminated by broadcast vs.\ two retained by sort-merge). On a multi-node cluster with high network latency the gap would widen substantially in Q9's favour. The RDD implementation of Q10 uses a manual \texttt{join()} on paired RDDs, which incurs the same shuffle but without whole-stage code generation or Tungsten off-heap memory management, leading to a $4.4\times$ slowdown relative to the DataFrame API ($38.77$~s vs.\ $8.85$~s).
 
 
 \subsection{Q11}
@@ -725,42 +748,46 @@ This plan demonstrates a query that summarizes the data on delay causes by airli
 \subsection{Q12}
 This query finds route-specific delay outliers by only looking at flights where the arrival delay is more than three standard deviations above the route mean. Catalyst improves the plan by combining the AVG and STDDEV window functions into one window operation over the same (ORIGIN, DEST) partition. This cuts down on unnecessary data scans. The physical plan runs a hash-partitioned exchange by route, then sorts the data and uses a combined window operator, and finally applies the outlier filter. This DataFrame/SQL plan is better than an RDD approach, which would need multiple shuffles and manual aggregation. It uses single-pass window computation, column pruning, and whole-stage code generation.
 \section{Performance Comparison Table}
+
+The table below is built directly from \texttt{scripts/results/performance\_results.csv}, generated by the spark-submit runs of every query script. Wall-clock time is measured by \texttt{time.perf\_counter()} around the action that triggers the DAG. The \emph{Shuffle stages} column is the count of \texttt{Exchange} operators in the DataFrame physical plan -- a direct proxy for shuffle volume, which dominates memory and network cost in distributed Spark workloads. Per-stage byte sizes and peak executor memory can be retrieved from the Spark UI on port 4040 while a job is running, or from event logs by enabling \texttt{spark.eventLog.enabled=true}; we report the structural shuffle count here because it is reproducible from the captured plans without re-instrumenting the cluster.
+
 \begin{table}[htbp]
 \centering
-\caption{Performance Comparison: RDD vs DataFrame vs SQL}
+\caption{Performance Comparison: RDD vs DataFrame vs SQL (\texttt{local[4]}, 3M rows)}
 \begin{tabular}{@{}lccccc@{}}
 \toprule
-\multirow{2}{*}{Query} & \multicolumn{3}{c}{Time (seconds)} & \multirow{2}{*}{Speedup (DF/RDD)} \\
+\multirow{2}{*}{Query} & \multicolumn{3}{c}{Time (seconds)} & \multirow{2}{*}{\shortstack{Shuffle\\stages (DF)}} & \multirow{2}{*}{\shortstack{Speedup\\(RDD/DF)}} \\
 \cmidrule(lr){2-4}
- & RDD & DataFrame & SQL & \\
+ & RDD & DataFrame & SQL & & \\
 \midrule
-Q1: Filter & 101.32 & 10.23 & 10.48 & 9.9$\times$ \\
-Q2: Aggregate & 59.88 & 8.59 & 7.41 & 7.0$\times$ \\
-Q3: Multi-group & 58.32 & 14.37 & 12.85 & 4.1$\times$ \\
-Q4: Top 20 Routes & 47.31 & 11.15 & 10.07 & 4.2$\times$ \\
-Q5: Moving Avg & 50.61 & 12.68 & 10.67 & 4.0$\times$ \\
-Q6: Cumulative & 45.17 & 10.85 & 11.16 & 4.2$\times$ \\
-Q7: Rank & 50.52 & 10.78 & 11.15 & 4.7$\times$ \\
-Q8: Subquery & 78.13 & 15.70 & 15.64 & 5.0$\times$ \\
-Q9: Broadcast Join & 49.11 & 17.81 & 16.34 & 2.8$\times$ \\
-Q10: SortMerge Join & 66.05 & 23.34 & 24.67 & 2.8$\times$ \\
-Q11: Root Cause & 56.95 & 9.05 & 6.96 & 6.3$\times$ \\
-Q12: Anomaly & 92.63 & 19.46 & 16.68 & 4.8$\times$ \\
+Q1: Filter            & 22.73 & 4.57 & 4.02 & 0 & 4.97$\times$ \\
+Q2: Aggregate         & 27.18 & 4.34 & 3.56 & 1 & 6.26$\times$ \\
+Q3: Multi-group       & 26.63 & 5.07 & 4.83 & 1 & 5.26$\times$ \\
+Q4: Top 20 Routes     & 24.03 & 4.90 & 4.05 & 1 & 4.90$\times$ \\
+Q5: Moving Avg        & 26.93 & 5.80 & 4.70 & 2 & 4.64$\times$ \\
+Q6: Cumulative        & 25.83 & 5.23 & 4.62 & 2 & 4.94$\times$ \\
+Q7: Rank              & 28.66 & 5.59 & 4.51 & 2 & 5.13$\times$ \\
+Q8: Subquery          & 32.22 & 7.79 & 7.23 & 2 & 4.14$\times$ \\
+Q9: Broadcast Join    & 30.95 & 8.73 & 8.37 & 1 & 3.55$\times$ \\
+Q10: SortMerge Join   & 38.77 & 8.85 & 8.20 & 3 & 4.38$\times$ \\
+Q11: Root Cause       & 30.01 & 4.39 & 3.69 & 1 & 6.83$\times$ \\
+Q12: Anomaly          & 35.30 & 6.37 & 5.08 & 1 & 5.55$\times$ \\
 \midrule
-\multicolumn{5}{c}{\textbf{Average Speedup: DataFrame vs RDD}} \\
-\multicolumn{5}{c}{\textbf{5.1$\times$ faster}} \\
+\multicolumn{6}{c}{\textbf{Average Speedup: DataFrame vs RDD $\approx$ 5.0$\times$ faster}} \\
 \bottomrule
 \end{tabular}
 \end{table}
 
+\noindent\textbf{Reading the shuffle column.} Q1 has zero shuffle stages because it is a pure filter and Catalyst pushes every predicate into the scan -- this is why it returns the largest absolute time saving against the cold CSV. Q9 only shows one shuffle stage despite being a join: the broadcast eliminates the join shuffle entirely, leaving only the final aggregation \texttt{Exchange}. Q10 shows three stages -- the most in the benchmark -- because a sort-merge join requires two \texttt{Exchange + Sort} pairs (one for each side of the join), then another \texttt{Exchange} for the trailing aggregation; this directly explains its position as the slowest DataFrame query in the table.
+
 \subsection*{Why DataFrame is the Recommended API}
 The DataFrame API delivers the best balance of performance and maintainability across all 12 queries:
 \begin{itemize}
-    \item \textbf{Approximately 5$\times$ faster than RDD} on average, with the largest gains on filter-heavy queries (Q1: $9.9\times$) where predicate pushdown eliminates most I/O before data is deserialized.
+    \item \textbf{Approximately 5$\times$ faster than RDD} on average, with the largest gains on aggregation-heavy queries (Q11: $6.83\times$, Q2: $6.26\times$) where Catalyst's column pruning slashes the bytes that ever reach the executor.
     \item \textbf{Performance on par with Spark SQL} -- both share the identical Catalyst optimization pipeline -- but DataFrame code is more composable and easier to integrate into multi-step Python pipelines involving conditional logic or UDFs.
     \item \textbf{Automatic Catalyst and Tungsten optimizations}: column pruning, predicate pushdown, two-phase partial aggregation, whole-stage code generation, and off-heap memory management are all applied transparently.
     \item \textbf{Consistent across query types}: whether the query is a simple filter, a multi-key aggregation, a window function, or a join, the DataFrame API closes the gap to optimal consistently.
-    \item Join queries (Q9, Q10) show the smallest speedup ($2.8\times$) because both DataFrame and RDD must perform a shuffle; however, the DataFrame path still benefits from whole-stage codegen and Tungsten binary processing.
+    \item The shuffle-heavy join (Q9 broadcast, Q10 sort-merge) shows the smallest speedup ($\sim$3.6--4.4$\times$) because both DataFrame and RDD pay shuffle and broadcast costs; the DataFrame path still wins through whole-stage codegen and Tungsten binary processing.
 \end{itemize}
 
 \section{Final Insights}
@@ -788,21 +815,103 @@ The following conclusions were drawn from analysing 3 million US domestic flight
 \subsection{Lessons Learned about Spark Optimization}
 
 \begin{enumerate}
-    \item \textbf{Structured APIs are superior for analytical workloads.} The DataFrame and SQL APIs delivered a consistent $5.1\times$ average speedup over RDDs. The key advantage is not raw parallelism but \textit{automatic optimization}: predicate pushdown, column pruning, and partial aggregation eliminate unnecessary work before any executor processes data.
+    \item \textbf{Structured APIs are superior for analytical workloads.} The DataFrame and SQL APIs delivered a consistent $\sim$5$\times$ average speedup over RDDs. The key advantage is not raw parallelism but \textit{automatic optimization}: predicate pushdown, column pruning, and partial aggregation eliminate unnecessary work before any executor processes data.
 
-    \item \textbf{Catalyst's predicate pushdown is the single biggest win for filter queries.} Q1 achieved a $9.9\times$ speedup -- the highest in the benchmark -- because the Catalyst Optimizer pushes all four filter conditions to the CSV scan stage, drastically reducing the volume of data that ever reaches the computation layer.
+    \item \textbf{Catalyst's column pruning is the single biggest win for aggregation queries.} Q11 (root-cause attribution) achieved a $6.83\times$ speedup -- the highest in the benchmark -- because the Catalyst Optimizer drops 26 of the 32 source columns at the file scan, reading only the six needed for the per-airline cause sum. The same pattern explains Q2's $6.26\times$ gain.
 
     \item \textbf{Shuffle is the dominant performance bottleneck.} Queries involving GROUP BY on high-cardinality keys (Q3, Q5, Q6) or joins (Q9, Q10) incur Exchange (shuffle) operations. Minimising the number of shuffle stages -- for example by caching intermediate aggregations or co-partitioning related tables -- is the most impactful optimization lever.
 
-    \item \textbf{Broadcast joins eliminate shuffle for small dimension tables.} Q9 vs Q10 directly demonstrated this: broadcasting the 20-row \texttt{airlines\_dim} table shaved approximately 5 seconds off execution time compared to the sort-merge join, entirely by avoiding the re-partitioning of the large flights table.
+    \item \textbf{Broadcast joins eliminate shuffle for small dimension tables.} Q9 vs Q10 directly demonstrated this. Wall-clock was nearly identical at this dataset size and on a single node ($8.73$~s broadcast vs.\ $8.85$~s sort-merge), but the physical plans differ fundamentally: broadcasting the 18-row \texttt{airlines\_dim} table avoids re-partitioning the 3M-row flights table entirely, a saving that grows with both cluster size and network cost.
 
-    \item \textbf{Adaptive Query Execution (AQE) provides automatic runtime tuning.} With \texttt{spark.sql.adaptive.enabled = true}, Spark dynamically coalesces post-shuffle partitions, avoiding the overhead of processing many empty partitions when data is skewed -- particularly beneficial for the multi-key grouping queries (Q3, Q7). Our scalability sweep (Section~4.4) confirmed this is non-trivial: Q3 ran in $1.72$~s with 50 shuffle partitions vs.\ $3.40$~s with the default 200, a $2\times$ swing driven solely by the partition count.
+    \item \textbf{Adaptive Query Execution (AQE) provides automatic runtime tuning.} With \texttt{spark.sql.adaptive.enabled = true}, Spark dynamically coalesces post-shuffle partitions, avoiding the overhead of processing many empty partitions when data is skewed. Our scalability sweep (Section~4.4) shows Q3 plateaus at $\sim 0.5$~s once partitions exceed core count -- AQE keeps that plateau stable instead of letting the curve degrade with too-large defaults.
 
-    \item \textbf{Caching pays for itself after one re-execution.} Section~4.1 measured \texttt{flights.cache()} delivering a $5.7\times$ speedup on Q2 (8.59~s cold vs.\ 1.50~s warm). For interactive analytics where the same dimension table is hit by many queries, caching is the single highest-ROI optimization in Spark -- it eliminates CSV/Parquet decoding entirely for every subsequent query.
+    \item \textbf{Caching pays for itself after one re-execution.} Section~4.1 measured \texttt{flights.cache()} delivering a $13.5\times$ speedup on Q2 ($5.08$~s cold vs.\ $0.38$~s warm). For interactive analytics where the same dimension table is hit by many queries, caching is the single highest-ROI optimization in Spark -- it eliminates CSV decoding entirely for every subsequent query.
 
-    \item \textbf{File format effects depend on query shape.} Our benchmark (Section~4.2) showed Parquet was \emph{not} a free win on Q3: it ran slightly slower than CSV (3.14~s vs.\ 2.84~s, $0.91\times$) because Q3 has no filter, so columnar I/O cannot prune anything and the Parquet decoder pays a small fixed cost. The real Parquet win arrives when combined with partition pruning: filtering on \texttt{YEAR=2022} reads only 687{,}860 of the 3M rows ($4.4\times$ less data), a saving that scales linearly with cluster size and dataset growth.
+    \item \textbf{File format matters even without filters.} Section~4.2 showed Parquet ran $5.71\times$ faster than CSV on Q3 ($1.02$~s vs.\ $5.82$~s) despite the query having no predicate to push down. The columnar layout still lets Spark read only the three columns the aggregation touches and skips per-row text-to-double parsing. Combined with partition pruning, filtering on \texttt{YEAR=2022} reads only 687{,}860 of the 3M rows ($4.4\times$ less data) -- a saving that scales linearly with cluster size and dataset growth.
 
     \item \textbf{RDDs are best reserved for unstructured data and custom transformations.} For all structured analytical queries in this benchmark, RDDs were uniformly slower, more verbose, and lacked automatic optimization. Their role in modern Spark applications should be limited to scenarios where the Structured API cannot express the required transformation.
 \end{enumerate}
+
+\section{Code Submission Layout}
+
+All terminal-runnable code lives in the \texttt{scripts/} directory alongside this report. Each query is a standalone \texttt{spark-submit} target and produces its own log under \texttt{scripts/logs/}; the captured CSV in \texttt{scripts/results/} is the exact source of the performance table in Section~6.
+
+\begin{footnotesize}
+\begin{verbatim}
+mini Project 2/
+|-- main.ipynb               # original Colab notebook (reference; not required to run)
+|-- flights_sample_3m.csv    # dataset (3M rows, ~600 MB)
+|-- Report/
+|   |-- main.tex             # this report
+|   `-- *.png                # query + explain screenshots
+`-- scripts/
+    |-- README.md            # WSL setup and run instructions
+    |-- common.py            # SparkSession factory, schema, helpers, perf logger
+    |-- download_dataset.py  # one-time Kaggle pull
+    |-- run_all.sh           # spark-submit each script + aggregate results
+    |-- aggregate_results.py # build performance_pivot.csv from the raw log
+    |-- q01_filter.py ... q12_anomaly.py    # 12 query scripts (RDD+DF+SQL+explain)
+    |-- optimization/
+    |   |-- caching.py             # cold vs warm Q2
+    |   |-- parquet_format.py      # CSV vs Parquet on Q3
+    |   |-- partition_pruning.py   # YEAR=2022 partition prune on Parquet
+    |   `-- scalability.py         # shuffle.partitions sweep
+    |-- logs/                # tee'd stdout per script (incl. .explain blocks)
+    `-- results/             # performance_results.csv, performance_pivot.csv
+\end{verbatim}
+\end{footnotesize}
+
+\subsection*{How to reproduce}
+
+\begin{footnotesize}
+\begin{verbatim}
+# WSL2 / Ubuntu 22.04 prerequisites
+sudo apt install -y openjdk-17-jre-headless python3 python3-pip python3-venv
+
+cd "mini Project 2"
+python3 -m venv .venv && source .venv/bin/activate
+pip install pyspark==3.5.1 kagglehub          # pandas optional
+
+cd scripts
+./run_all.sh                                  # runs all 12 queries + 4 optimization studies
+python3 aggregate_results.py                  # prints RDD vs DF vs SQL pivot
+\end{verbatim}
+\end{footnotesize}
+
+\noindent Per-query reproduction (used for the screenshots in Section~3) is a single command:
+
+\begin{footnotesize}
+\begin{verbatim}
+spark-submit --master "local[4]" --driver-memory 4g \
+             --py-files common.py q09_broadcast_join.py
+\end{verbatim}
+\end{footnotesize}
+
+\subsection*{Cluster configuration knobs}
+
+The runner honours the following environment variables for scalability tests:
+
+\begin{table}[H]
+\centering
+\begin{tabular}{@{}lll@{}}
+\toprule
+\textbf{Variable} & \textbf{Default} & \textbf{Effect} \\
+\midrule
+\texttt{SPARK\_MASTER}        & \texttt{local[4]} & cluster URL / cores \\
+\texttt{DRIVER\_MEMORY}       & \texttt{4g}       & driver heap \\
+\texttt{SHUFFLE\_PARTITIONS}  & \texttt{200}      & \texttt{spark.sql.shuffle.partitions} \\
+\texttt{FLIGHTS\_CSV}         & project root      & source CSV path \\
+\texttt{FLIGHTS\_PARQUET}     & project root      & Parquet output / read path \\
+\texttt{RESULTS\_DIR}         & \texttt{scripts/results} & where the CSV log is written \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+For example, a 2-core run with 100 shuffle partitions:
+\begin{footnotesize}
+\begin{verbatim}
+SPARK_MASTER='local[2]' SHUFFLE_PARTITIONS=100 ./run_all.sh
+\end{verbatim}
+\end{footnotesize}
 
 \end{document}
