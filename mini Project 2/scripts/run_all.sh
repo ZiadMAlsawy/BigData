@@ -3,13 +3,13 @@
 # Designed for WSL/Linux. Usage: ./run_all.sh
 set -euo pipefail
 
-SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )" # Get absolute path of the script's directory
 cd "$SCRIPT_DIR"
 
-LOG_DIR="${LOG_DIR:-$SCRIPT_DIR/logs}"
-RESULTS_DIR="${RESULTS_DIR:-$SCRIPT_DIR/results}"
-mkdir -p "$LOG_DIR" "$RESULTS_DIR"
-export RESULTS_DIR
+LOG_DIR="${LOG_DIR:-$SCRIPT_DIR/logs}" # Directory for logs
+RESULTS_DIR="${RESULTS_DIR:-$SCRIPT_DIR/results}" # Directory for CSV results (performance metrics)
+mkdir -p "$LOG_DIR" "$RESULTS_DIR" # Create directory
+export RESULTS_DIR # export so that spark jobs can write to it
 
 # Reset performance log so each full run is independent.
 rm -f "$RESULTS_DIR/performance_results.csv"
