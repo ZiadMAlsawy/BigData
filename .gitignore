@@ -1,5 +1,5 @@
 # Large dataset files
-*.csv
+flights_sample_3m.csv
 *.parquet
 
 # Python
