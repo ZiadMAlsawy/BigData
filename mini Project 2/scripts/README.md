@@ -50,6 +50,7 @@ which spark-submit   # should resolve to .venv/bin/spark-submit
 ```
 
 If `spark-submit` is not on `$PATH`, point at the one PySpark ships with:
+
 ```bash
 export PATH="$(python3 -c 'import pyspark, os; print(os.path.dirname(pyspark.__file__) + "/bin")'):$PATH"
 ```
@@ -97,6 +98,7 @@ Output sample (truncated):
 ```
 
 The script:
+
 1. Wipes `results/performance_results.csv`.
 2. Runs every `qNN_*.py` in order.
 3. Runs the four `optimization/*.py` scripts (caching, CSV vs Parquet,
@@ -110,15 +112,15 @@ should be taken from.
 
 ## 5. Environment overrides
 
-| Variable               | Default                      | Purpose                                  |
-|------------------------|------------------------------|------------------------------------------|
-| `SPARK_MASTER`         | `local[4]`                   | Spark master URL                         |
-| `DRIVER_MEMORY`        | `4g`                         | Driver heap                              |
-| `SHUFFLE_PARTITIONS`   | `200`                        | `spark.sql.shuffle.partitions`           |
-| `FLIGHTS_CSV`          | `<project>/flights_sample_3m.csv` | Source CSV                          |
-| `FLIGHTS_PARQUET`      | `<project>/flights.parquet`  | Parquet output / read path               |
-| `RESULTS_DIR`          | `scripts/results`            | Where performance CSVs are written       |
-| `SPARK_LOG_LEVEL`      | `WARN`                       | Spark log4j level                        |
+| Variable             | Default                           | Purpose                            |
+| -------------------- | --------------------------------- | ---------------------------------- |
+| `SPARK_MASTER`       | `local[4]`                        | Spark master URL                   |
+| `DRIVER_MEMORY`      | `4g`                              | Driver heap                        |
+| `SHUFFLE_PARTITIONS` | `200`                             | `spark.sql.shuffle.partitions`     |
+| `FLIGHTS_CSV`        | `<project>/flights_sample_3m.csv` | Source CSV                         |
+| `FLIGHTS_PARQUET`    | `<project>/flights.parquet`       | Parquet output / read path         |
+| `RESULTS_DIR`        | `scripts/results`                 | Where performance CSVs are written |
+| `SPARK_LOG_LEVEL`    | `WARN`                            | Spark log4j level                  |
 
 Example - run with two cores and 100 shuffle partitions:
 
@@ -128,35 +130,36 @@ SPARK_MASTER='local[2]' SHUFFLE_PARTITIONS=100 ./run_all.sh
 
 ## 6. What each query covers (rubric mapping)
 
-| Script                         | Rubric requirement                                |
-|--------------------------------|---------------------------------------------------|
-| `q01_filter.py`                | (1) Filtering with complex conditions             |
-| `q02_aggregate.py`             | (2) Aggregations: SUM/AVG/COUNT/MAX/MIN           |
-| `q03_multi_group.py`           | (3) Grouping by multiple attributes               |
-| `q04_top20_routes.py`          | (4) Sorting and ranking                           |
-| `q05_moving_avg.py`            | (5) Window: 7-day moving average                  |
-| `q06_cumulative.py`            | (5) Window: cumulative sum                        |
-| `q07_rank.py`                  | (5) Window: rank()                                |
-| `q08_subquery.py`              | (6) Nested / subquery                             |
-| `q09_broadcast_join.py`        | (7) Broadcast join (with `BROADCAST` hint)        |
-| `q10_sortmerge_join.py`        | (7) Sort-merge join (broadcast disabled)          |
-| `q11_root_cause.py`            | Complex aggregation (delay attribution)           |
-| `q12_anomaly.py`               | Anomaly detection (window mean +/- 3 sigma)       |
-| `optimization/caching.py`      | Caching impact (cold vs warm)                     |
-| `optimization/parquet_format.py` | CSV vs Parquet                                  |
-| `optimization/partition_pruning.py` | Partition pruning on YEAR=2022               |
-| `optimization/scalability.py`  | Shuffle-partition sweep                           |
+| Script                              | Rubric requirement                          |
+| ----------------------------------- | ------------------------------------------- |
+| `q01_filter.py`                     | (1) Filtering with complex conditions       |
+| `q02_aggregate.py`                  | (2) Aggregations: SUM/AVG/COUNT/MAX/MIN     |
+| `q03_multi_group.py`                | (3) Grouping by multiple attributes         |
+| `q04_top20_routes.py`               | (4) Sorting and ranking                     |
+| `q05_moving_avg.py`                 | (5) Window: 7-day moving average            |
+| `q06_cumulative.py`                 | (5) Window: cumulative sum                  |
+| `q07_rank.py`                       | (5) Window: rank()                          |
+| `q08_subquery.py`                   | (6) Nested / subquery                       |
+| `q09_broadcast_join.py`             | (7) Broadcast join (with `BROADCAST` hint)  |
+| `q10_sortmerge_join.py`             | (7) Sort-merge join (broadcast disabled)    |
+| `q11_root_cause.py`                 | Complex aggregation (delay attribution)     |
+| `q12_anomaly.py`                    | Anomaly detection (window mean +/- 3 sigma) |
+| `optimization/caching.py`           | Caching impact (cold vs warm)               |
+| `optimization/parquet_format.py`    | CSV vs Parquet                              |
+| `optimization/partition_pruning.py` | Partition pruning on YEAR=2022              |
+| `optimization/scalability.py`       | Shuffle-partition sweep                     |
 
 ## 7. Reading the explain plans
 
 `.explain(True)` prints four sections. For the report, screenshot:
+
 - **Parsed / Analyzed Logical Plan** -> "initial logical plan"
 - **Optimized Logical Plan** -> "Catalyst-optimized plan"
 - **Physical Plan** -> "execution strategy"
 
 Compare across APIs by diffing the Optimized Logical Plan: the DataFrame
 and SQL versions of the same query collapse to the same plan, while the
-RDD has no plan (use `rdd.toDebugString()` if a screenshot is required).
+RDD has no plan.
 
 ## 8. Tips
 
