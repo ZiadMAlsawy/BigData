@@ -1,0 +1,14 @@
+data/
+models/
+output/
+infra/kafka-data/
+infra/kafka.log
+infra/kraft-server.properties.runtime
+__pycache__/
+*.pyc
+.venv/
+venv/
+spark-warehouse/
+metastore_db/
+.ipynb_checkpoints/
+checkpoints/
