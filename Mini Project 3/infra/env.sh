@@ -33,11 +33,20 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 
 # -----------------------------
-# IMPORTANT FIX: FORCE WINDOWS-FRIENDLY PATH
+# Kafka log dir
+# Default: WSL-native ($HOME/mp3-kafka-data) when project sits on /mnt/c
+# (avoids 9p I/O bug that crashes broker on heavy writes).
+# Override: export KAFKA_LOG_DIR before running.
 # -----------------------------
-KAFKA_LOG_DIR="$PROJECT_DIR/infra/kafka-data"
+if [ -z "${KAFKA_LOG_DIR:-}" ]; then
+  if [[ "$PROJECT_DIR" == /mnt/* ]] && [ -n "${HOME:-}" ]; then
+    KAFKA_LOG_DIR="$HOME/mp3-kafka-data"
+  else
+    KAFKA_LOG_DIR="$PROJECT_DIR/infra/kafka-data"
+  fi
+fi
 
-# Convert to Windows-safe format for Kafka (Java layer)
+# Convert to Windows-safe format for Kafka (Java layer) only on Git Bash / Cygwin
 KAFKA_LOG_DIR=$(cygpath -m "$KAFKA_LOG_DIR" 2>/dev/null || echo "$KAFKA_LOG_DIR")
 
 export KAFKA_DIR KAFKA_BROKER PROJECT_DIR KAFKA_LOG_DIR

@@ -13,7 +13,16 @@ if [ -d "$HOME/mp3-data" ] && [ -z "${MP3_DATA_DIR:-}" ]; then
 fi
 : "${MP3_DATA_DIR:=$PROJECT_DIR/data}"
 : "${MP3_MODEL_DIR:=$PROJECT_DIR/models}"
-: "${MP3_OUTPUT_DIR:=$PROJECT_DIR/output}"
+# Default output to WSL-native FS to avoid /mnt/c 9p I/O bug
+if [ -z "${MP3_OUTPUT_DIR:-}" ]; then
+  if [ -d "$HOME" ] && [[ "$PROJECT_DIR" == /mnt/* ]]; then
+    MP3_OUTPUT_DIR="$HOME/mp3-output"
+    mkdir -p "$MP3_OUTPUT_DIR"
+    echo "[run_all] using WSL-native MP3_OUTPUT_DIR=$MP3_OUTPUT_DIR"
+  else
+    MP3_OUTPUT_DIR="$PROJECT_DIR/output"
+  fi
+fi
 : "${MP3_CHECKPOINT_DIR:=$MP3_OUTPUT_DIR/checkpoints}"
 export MP3_DATA_DIR MP3_MODEL_DIR MP3_OUTPUT_DIR MP3_CHECKPOINT_DIR
 
@@ -50,8 +59,8 @@ echo "[run_all]   pid=$(cat "$LOG_DIR/streaming.pid") log=$LOG_DIR/streaming.log
 
 sleep 8
 
-echo "[run_all] starting producer (synthetic mode for demo)"
-nohup "$PYBIN" src/kafka_producer.py --mode synthetic --rate 80 \
+echo "[run_all] starting producer (synthetic mode, 30 ev/s)"
+nohup "$PYBIN" src/kafka_producer.py --mode synthetic --rate 30 \
         > "$LOG_DIR/producer.log" 2>&1 &
 echo $! > "$LOG_DIR/producer.pid"
 echo "[run_all]   pid=$(cat "$LOG_DIR/producer.pid") log=$LOG_DIR/producer.log"

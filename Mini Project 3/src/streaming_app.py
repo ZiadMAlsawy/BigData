@@ -51,7 +51,7 @@ def build_kafka_source(spark) -> DataFrame:
                  .option("kafka.bootstrap.servers", KAFKA_BROKER)
                  .option("subscribe", TOPIC_INTERACTIONS)
                  .option("startingOffsets", "latest")
-                 .option("maxOffsetsPerTrigger", 2000)
+                 .option("maxOffsetsPerTrigger", 500)
                  .option("failOnDataLoss", "false")
                  .load())
 
@@ -171,11 +171,18 @@ def latency_sink(events: DataFrame, output_path: Path, checkpoint: Path):
     def _process(batch: DataFrame, batch_id: int):
         if batch.rdd.isEmpty():
             return
+        # ingest_ms = Kafka append time, with sub-second precision via double cast.
+        # process_ms = wall-clock at the moment this batch lands in foreachBatch
+        #              (set in driver, applied as a literal to every row)
+        process_ms = int(time.time() * 1000)
         with_lat = batch.withColumn(
-            "ingest_ms", (F.unix_timestamp("kafka_ts") * 1000).cast("long")
+            "ingest_ms", (F.col("kafka_ts").cast("double") * 1000).cast("long")
         ).withColumn(
-            "latency_ms", F.col("ingest_ms") - F.col("event_time_ms")
-        ).select("user_id", "item_id", "event_time_ms", "ingest_ms", "latency_ms")
+            "process_ms", F.lit(process_ms).cast("long")
+        ).withColumn(
+            "latency_ms", F.col("process_ms") - F.col("event_time_ms")
+        ).select("user_id", "item_id", "event_time_ms",
+                 "ingest_ms", "process_ms", "latency_ms")
         (with_lat.write.mode("append").parquet(str(output_path)))
 
     return (events.writeStream
@@ -244,7 +251,7 @@ def recs_sink(events: DataFrame, item_win: DataFrame, output_path: Path,
                     .foreachBatch(_process)
                     .option("checkpointLocation", str(checkpoint / "recs"))
                     .outputMode("append")
-                    .trigger(processingTime=f"{TRIGGER}")
+                    .trigger(processingTime="3 seconds")
                     .start())
 
     q_trend = (item_win.writeStream
@@ -281,7 +288,6 @@ def main():
                                value_cols=["alert_type", "subject", "metric",
                                            "magnitude", "window_start", "window_end"],
                                key_col="alert_type"))
-    queries.append(write_console(alerts, "alerts_console", num_rows=20))
 
     queries.append(latency_sink(events, out / "latency", cp / "latency"))
 

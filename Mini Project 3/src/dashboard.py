@@ -7,12 +7,18 @@ import pandas as pd
 import plotly.express as px
 import streamlit as st
 
+try:
+    from streamlit_autorefresh import st_autorefresh
+    HAS_AUTOREFRESH = True
+except ImportError:
+    HAS_AUTOREFRESH = False
+
 from common import OUTPUT_DIR
 
 st.set_page_config(page_title="MP3 Real-Time Recs", layout="wide",
                    initial_sidebar_state="collapsed")
 
-REFRESH_SECONDS = 2
+REFRESH_SECONDS = 5
 
 WIN_ITEMS = OUTPUT_DIR / "windows" / "items"
 WIN_USERS = OUTPUT_DIR / "windows" / "users"
@@ -21,34 +27,40 @@ ALERTS = OUTPUT_DIR / "alerts"
 LATENCY = OUTPUT_DIR / "latency"
 
 
+@st.cache_data(ttl=3, show_spinner=False)
 def _read_parquet(path: Path) -> pd.DataFrame:
     if not path.exists():
         return pd.DataFrame()
     parts = list(path.glob("*.parquet")) + list(path.glob("**/*.parquet"))
-    parts = [p for p in parts if "_spark_metadata" not in p.parts]
+    parts = [p for p in parts
+             if "_spark_metadata" not in p.parts
+             and "_temporary" not in p.parts
+             and p.exists()]
     if not parts:
         return pd.DataFrame()
-    try:
-        return pd.read_parquet(path)
-    except Exception:
-        frames = []
-        for p in parts[-50:]:
-            try:
-                frames.append(pd.read_parquet(p))
-            except Exception:
-                pass
-        return pd.concat(frames, ignore_index=True) if frames else pd.DataFrame()
+    frames = []
+    for p in parts[-100:]:
+        try:
+            frames.append(pd.read_parquet(p))
+        except (FileNotFoundError, OSError):
+            pass
+    return pd.concat(frames, ignore_index=True) if frames else pd.DataFrame()
 
 
 def main():
     st.title("Real-Time Book Recommendations — MP3")
-    st.caption(f"Auto-refresh every {REFRESH_SECONDS}s. Source: {OUTPUT_DIR}")
+    auto = st.sidebar.checkbox("Auto-refresh", value=True)
+    interval = st.sidebar.slider("Refresh seconds", 2, 30, REFRESH_SECONDS)
+    st.caption(f"Source: {OUTPUT_DIR}")
 
-    # autorefresh via meta-tag fallback
-    st.markdown(
-        f"<meta http-equiv='refresh' content='{REFRESH_SECONDS}'>",
-        unsafe_allow_html=True,
-    )
+    if auto:
+        if HAS_AUTOREFRESH:
+            st_autorefresh(interval=interval * 1000, key="auto")
+        else:
+            st.markdown(
+                f"<meta http-equiv='refresh' content='{interval}'>",
+                unsafe_allow_html=True,
+            )
 
     items = _read_parquet(WIN_ITEMS)
     users = _read_parquet(WIN_USERS)
