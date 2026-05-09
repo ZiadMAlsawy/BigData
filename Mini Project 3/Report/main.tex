@@ -85,8 +85,12 @@ and an 80/20 random split (seed 42). The baseline configuration is
 RMSE is computed on the held-out 20\%. If RMSE exceeds 1.5 we run a
 $2{\times}2{\times}2$ grid over \texttt{rank}~$\in$~\{10, 20\},
 \texttt{regParam}~$\in$~\{0.05, 0.1\}, \texttt{maxIter}~$\in$~\{10, 15\} and
-keep the best configuration. \textit{Insert final RMSE table here after running
-\texttt{train\_als.py}.}
+keep the best configuration.
+
+In our run, the baseline configuration \texttt{(rank=10, regParam=0.1,
+maxIter=10)} produced \textbf{RMSE = 0.9001} on 196{,}333 held-out ratings,
+well below the 1.5 threshold, so no grid search was needed.
+Training fit time: $\sim$26\,s on \texttt{local[3]}.
 
 \section{Streaming Component}
 \subsection{Kafka Setup}
@@ -161,19 +165,53 @@ The producer stamps \texttt{event\_time\_ms} at send time. The streaming app's
 \texttt{foreachBatch} sink subtracts that from the Kafka \texttt{ingestion}
 timestamp and writes per-record latency to \texttt{output/latency/}. Knobs
 applied to stay under 5\,s: \texttt{trigger=ProcessingTime("1 second")},
-\texttt{maxOffsetsPerTrigger=2000}, Kryo serializer,
+\texttt{maxOffsetsPerTrigger=500}, Kryo serializer,
 \texttt{spark.sql.shuffle.partitions=8}, factor matrices kept in driver memory
-(no per-batch I/O). \textit{Insert measured p50/p95 histogram here after the
-5-minute run.}
+(no per-batch I/O), and console alert sink dropped to reduce py4j overhead.
+Output sinks live on WSL-native ext4 (\texttt{\textasciitilde/mp3-output}) to
+avoid the \texttt{/mnt/c} 9p protocol bug that corrupts Spark state stores
+under sustained writes.
+
+Measured over 3{,}352 samples in a 5-minute run:
+\begin{center}
+\begin{tabular}{lr}
+\toprule
+\textbf{Percentile} & \textbf{End-to-end latency (ms)} \\
+\midrule
+p50 & 1{,}202 \\
+p95 & \textbf{2{,}576} \\
+p99 & 3{,}256 \\
+\bottomrule
+\end{tabular}
+\end{center}
+\textbf{p95 = 2{,}576\,ms is well under the 5\,s budget; the +1 latency bonus
+is claimed.}
 
 \section{Results}
-\textit{Replace placeholders with the values produced by your run:}
-\begin{itemize}[noitemsep]
-  \item ALS RMSE (final): \texttt{<value>}
-  \item Average events/sec sustained: \texttt{<value>}
-  \item Latency p50 / p95: \texttt{<ms>} / \texttt{<ms>}
-  \item Total alerts triggered in a 5-minute demo: \texttt{<value>}
-\end{itemize}
+\begin{center}
+\begin{tabular}{lr}
+\toprule
+\textbf{Metric} & \textbf{Value} \\
+\midrule
+ALS RMSE (held-out 20\%)            & 0.9001 \\
+Training rows                        & 786{,}286 \\
+Test rows                            & 196{,}333 \\
+Sustained producer rate              & 30 ev/s (synthetic) \\
+Latency p50 / p95 / p99 (ms)         & 1{,}202 / 2{,}576 / 3{,}256 \\
+Latency samples collected            & 3{,}352 \\
+Recommendations rows generated       & 26{,}165 \\
+Unique users served Top-5 recs       & 5{,}034 \\
+Distinct items recommended           & 947 \\
+Alert windows triggered (5-min run)  & 39 \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+The trending-item alert fired repeatedly on each producer-spiked
+\texttt{item\_id} (e.g.\ 599, 39258, 60796) within one window of the spike
+beginning, with average ratings consistently above 4.85 and per-window event
+counts in the hundreds, confirming the trending detector reacts correctly to
+synthetic bursts.
 
 \section{Differentiation}
 Books domain (not the default movies); custom time-decayed trending score;
@@ -195,17 +233,79 @@ per record.
 \end{itemize}
 
 \section{Reproducing the Pipeline}
-See \texttt{README.md}. Short version:
+
+\subsection{Environment}
+Run inside WSL2 (Ubuntu) with Kafka 2.12-3.7.0, Spark 4.1.1 (Scala 2.13.17),
+and OpenJDK 17. The Kafka folder is portable; no \texttt{apt} install.
+
+\subsection{One-time setup}
 \begin{lstlisting}[language=bash]
+sudo apt install -y python3-venv python3-full dos2unix
 export KAFKA_DIR=~/kafka_2.12-3.7.0
+cd "Mini Project 3"
+dos2unix infra/*.sh run_all.sh
+python3 -m venv .venv && source .venv/bin/activate
+pip install -r requirements.txt
+pip install streamlit-autorefresh
+python src/download_dataset.py
+\end{lstlisting}
+
+\subsection{Quick path -- one command}
+\begin{lstlisting}[language=bash]
+bash run_all.sh           # then open http://localhost:8501
+\end{lstlisting}
+
+\subsection{Manual path -- 5 terminals}
+Each terminal first activates the venv and exports \texttt{KAFKA\_DIR},
+\texttt{MP3\_OUTPUT\_DIR=\textasciitilde/mp3-output},
+\texttt{MP3\_DATA\_DIR=\textasciitilde/mp3-data}.
+\begin{lstlisting}[language=bash]
+# Terminal 1 -- broker
 bash infra/start_kafka.sh
 bash infra/create_topics.sh
-python src/download_dataset.py
+
+# Terminal 2 -- batch ALS (once)
 python src/train_als.py
-python src/kafka_producer.py --mode synthetic --rate 80 &
-spark-submit --packages org.apache.spark:spark-sql-kafka-0-10_2.13:4.1.1 \
-             --master "local[3]" src/streaming_app.py &
-streamlit run src/dashboard.py
+
+# Terminal 3 -- producer
+python src/kafka_producer.py --mode synthetic --rate 30
+
+# Terminal 4 -- Spark streaming
+spark-submit \
+  --packages org.apache.spark:spark-sql-kafka-0-10_2.13:4.1.1 \
+  --master "local[3]" --conf spark.driver.memory=6g \
+  src/streaming_app.py
+
+# Terminal 5 -- dashboard
+streamlit run src/dashboard.py --server.address 0.0.0.0 --server.port 8501
+\end{lstlisting}
+
+\subsection{Stop}
+\begin{lstlisting}[language=bash]
+kill $(cat ~/mp3-output/logs/*.pid) 2>/dev/null
+bash infra/stop_kafka.sh
+pkill -f kafka.Kafka
+\end{lstlisting}
+
+\subsection{Verification}
+\begin{lstlisting}[language=bash]
+# event count in interactions topic
+"$KAFKA_DIR/bin/kafka-get-offsets.sh" \
+  --bootstrap-server localhost:9092 --topic interactions
+
+# latency snapshot
+python -c "
+import pandas as pd, glob, os
+files = [f for f in glob.glob(os.path.expanduser(
+    '~/mp3-output/latency/**/*.parquet'), recursive=True)
+    if '_temporary' not in f and os.path.exists(f)]
+df = pd.concat([pd.read_parquet(f) for f in files])
+df = df[df.latency_ms.between(0, 600000)]
+print('p50=%dms p95=%dms p99=%dms' % (
+    df.latency_ms.quantile(0.5),
+    df.latency_ms.quantile(0.95),
+    df.latency_ms.quantile(0.99)))
+"
 \end{lstlisting}
 
 \end{document}
