@@ -21,7 +21,7 @@
   columns=fullflexible,
 }
 
-\title{Mini Project 3 --- Real-Time Book Recommendation System\\
+\title{Mini Project 3 -Real-Time Book Recommendation System\\
        \large DSAI 427 Big Data Analytics}
 \author{Mohamed Hozien \and \textit{Partner Name}}
 \date{May 2026}
@@ -223,7 +223,7 @@ per record.
 \section{Challenges and Lessons Learned}
 \begin{itemize}[noitemsep]
   \item Aligning Spark 4.1.1 (Scala 2.13) with the matching
-        \texttt{spark-sql-kafka-0-10\_2.13} connector --- mismatched Scala
+        \texttt{spark-sql-kafka-0-10\_2.13} connector -mismatched Scala
         builds silently fail at JSON parsing.
   \item Streaming state can grow unbounded; we cap the trending state map and
         rely on watermark-driven aggregation cleanup.
@@ -250,33 +250,33 @@ pip install streamlit-autorefresh
 python src/download_dataset.py
 \end{lstlisting}
 
-\subsection{Quick path -- one command}
+\subsection{Quick path one command}
 \begin{lstlisting}[language=bash]
 bash run_all.sh           # then open http://localhost:8501
 \end{lstlisting}
 
-\subsection{Manual path -- 5 terminals}
+\subsection{Manual path 5 terminals}
 Each terminal first activates the venv and exports \texttt{KAFKA\_DIR},
 \texttt{MP3\_OUTPUT\_DIR=\textasciitilde/mp3-output},
 \texttt{MP3\_DATA\_DIR=\textasciitilde/mp3-data}.
 \begin{lstlisting}[language=bash]
-# Terminal 1 -- broker
+# Terminal 1 broker
 bash infra/start_kafka.sh
 bash infra/create_topics.sh
 
-# Terminal 2 -- batch ALS (once)
+# Terminal 2 batch ALS (once)
 python src/train_als.py
 
-# Terminal 3 -- producer
+# Terminal 3 producer
 python src/kafka_producer.py --mode synthetic --rate 30
 
-# Terminal 4 -- Spark streaming
+# Terminal 4 Spark streaming
 spark-submit \
   --packages org.apache.spark:spark-sql-kafka-0-10_2.13:4.1.1 \
   --master "local[3]" --conf spark.driver.memory=6g \
   src/streaming_app.py
 
-# Terminal 5 -- dashboard
+# Terminal 5 dashboard
 streamlit run src/dashboard.py --server.address 0.0.0.0 --server.port 8501
 \end{lstlisting}
 
