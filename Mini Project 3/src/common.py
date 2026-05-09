@@ -22,7 +22,7 @@ ITEM_FACTORS_PATH = MODEL_DIR / "item_factors.parquet"
 USER_INDEX_PATH = MODEL_DIR / "user_index.parquet"
 ITEM_INDEX_PATH = MODEL_DIR / "item_index.parquet"
 
-KAFKA_BROKER = os.environ.get("KAFKA_BROKER", "localhost:9092")
+KAFKA_BROKER = os.environ.get("KAFKA_BROKER", "127.0.0.1:9092")
 TOPIC_INTERACTIONS = os.environ.get("TOPIC_INTERACTIONS", "interactions")
 TOPIC_RECS = os.environ.get("TOPIC_RECS", "recommendations")
 TOPIC_ALERTS = os.environ.get("TOPIC_ALERTS", "alerts")

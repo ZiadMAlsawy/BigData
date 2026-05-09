@@ -32,9 +32,11 @@ bash infra/create_topics.sh
 python src/train_als.py
 
 # Terminal 3 — produce events from held-out reviews
+## THIS SHOULD BE EDITED AS IT WIL PROCESS ALL DATASET AND TAKES MUCH TIME
 python src/kafka_producer.py --mode replay --rate 50
 
 # Terminal 4 — run streaming app
+## THIS RUNS IN WOERSHELL NOT IN GIT BASH, IDON"T KNOW IS THAT CORRECT OR NOT (DOES NOT COMPLETE AT ALL)
 spark-submit \
   --packages org.apache.spark:spark-sql-kafka-0-10_2.13:4.1.1 \
   --master "local[3]" \
