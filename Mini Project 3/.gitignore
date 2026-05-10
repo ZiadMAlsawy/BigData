@@ -12,3 +12,4 @@ spark-warehouse/
 metastore_db/
 .ipynb_checkpoints/
 checkpoints/
+*.pid

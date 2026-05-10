@@ -1,0 +1,41 @@
+flowchart LR
+    subgraph BATCH["Batch ML (one-shot)"]
+        CSV[("Kindle Reviews CSV<br/>~982K rows")]
+        TRAIN["train_als.py<br/>StringIndexer<br/>80/20 split<br/>ALS rank=10, reg=0.1"]
+        MODEL[("models/<br/>als_model<br/>user_factors.parquet<br/>item_factors.parquet")]
+        CSV --> TRAIN --> MODEL
+    end
+
+    subgraph STREAM["Real-time pipeline"]
+        PROD["kafka_producer.py<br/>synthetic | replay<br/>key = user_id % 3"]
+        K1[("Kafka topic<br/>interactions<br/>3 partitions")]
+        SPARK["streaming_app.py<br/>Spark Structured Streaming<br/>window 30s / slide 10s<br/>watermark 1 min"]
+        REC["Hybrid recommender<br/>0.7 ALS + 0.3 trending<br/>cold-start fallback"]
+        ALERT["Alert engine<br/>avg_rating > 4.5 & count >= 10<br/>user_burst >= 20"]
+        PROD --> K1 --> SPARK
+        SPARK --> REC
+        SPARK --> ALERT
+    end
+
+    MODEL -. load factors .-> REC
+
+    subgraph SINKS["Sinks"]
+        K2[("Kafka<br/>recommendations")]
+        K3[("Kafka<br/>alerts")]
+        PARQ[("Parquet<br/>windows/ recs/<br/>alerts/ latency/")]
+        DASH["Streamlit dashboard<br/>5 panels<br/>localhost:8501"]
+    end
+
+    REC --> K2
+    REC --> PARQ
+    ALERT --> K3
+    ALERT --> PARQ
+    SPARK --> PARQ
+    PARQ --> DASH
+
+    classDef store fill:#1f2937,stroke:#9ca3af,color:#fff
+    classDef proc fill:#1e3a8a,stroke:#60a5fa,color:#fff
+    classDef sink fill:#065f46,stroke:#34d399,color:#fff
+    class CSV,MODEL,K1,K2,K3,PARQ store
+    class TRAIN,SPARK,REC,ALERT,PROD proc
+    class DASH sink

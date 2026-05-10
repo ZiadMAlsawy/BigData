@@ -23,7 +23,7 @@
 # -----------------------------
 # Kafka installation directory
 # -----------------------------
-: "${KAFKA_DIR:=/c/Users/zyada/kafka_2.13-3.9.1}"
+# : "${KAFKA_DIR:=/c/Users/zyada/kafka_2.13-3.9.1}"
 : "${KAFKA_BROKER:=127.0.0.1:9092}"
 
 # -----------------------------

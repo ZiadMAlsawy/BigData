@@ -4,6 +4,8 @@
 \usepackage[T1]{fontenc}
 \usepackage{lmodern}
 \usepackage[margin=1in]{geometry}
+\usepackage{amsmath}
+\usepackage{amssymb}
 \usepackage{graphicx}
 \usepackage{hyperref}
 \usepackage{booktabs}
@@ -12,6 +14,8 @@
 \usepackage{enumitem}
 
 \hypersetup{colorlinks=true, linkcolor=blue, urlcolor=blue}
+
+\setlength{\emergencystretch}{3em}
 
 \lstset{
   basicstyle=\ttfamily\small,
@@ -23,7 +27,7 @@
 
 \title{Mini Project 3 -Real-Time Book Recommendation System\\
        \large DSAI 427 Big Data Analytics}
-\author{Mohamed Hozien \and \textit{Partner Name}}
+\author{Mohamed Hozien \and {Ziad Moataz}}
 \date{May 2026}
 
 \begin{document}
@@ -43,16 +47,15 @@ slice of System Optimization for the latency bonus.\\
 \textbf{Bonuses pursued:} Streamlit dashboard (+2), latency $<$5\,s (+1).
 
 \section{System Architecture}
-\begin{center}
-  \fbox{\parbox{0.95\textwidth}{\centering
-  \texttt{historical CSV} $\rightarrow$ \texttt{ALS Trainer} $\rightarrow$
-  \texttt{als\_model/} $\rightarrow$ \texttt{Streaming app}\\
-  \texttt{Producer} $\rightarrow$ \texttt{Kafka(interactions, 3p)} $\rightarrow$
-  \texttt{Spark Structured Streaming} $\rightarrow$
-  \{\texttt{recs}, \texttt{alerts}\} topics + parquet sinks\\
-  \texttt{Streamlit dashboard} polls parquet sinks every 2\,s.}}
-\end{center}
-% Replace the box above with figures/architecture.png once the diagram is drawn.
+\begin{figure}[h]
+  \centering
+  \includegraphics[width=0.95\textwidth]{figures/Batch and Stream ML Pipeline.png}
+  \caption{End-to-end pipeline: batch ALS training feeds factor parquets into the
+  streaming app; Kafka \texttt{interactions} (3 partitions, key=\texttt{user\_id\%3})
+  drives Spark Structured Streaming, which emits hybrid recommendations and alerts
+  to Kafka topics and parquet sinks; the Streamlit dashboard polls the sinks.}
+  \label{fig:arch}
+\end{figure}
 
 \section{Dataset and Justification}
 The dataset is the Kindle Reviews release on Kaggle
@@ -95,7 +98,7 @@ Training fit time: $\sim$26\,s on \texttt{local[3]}.
 \section{Streaming Component}
 \subsection{Kafka Setup}
 Kafka 2.12-3.7.0 runs in KRaft single-node mode from a portable folder
-(\texttt{\$KAFKA\_DIR/bin/kafka-server-start.sh}). The
+(\texttt{\$KAFKA\_DIR/bin/}\allowbreak\texttt{kafka-server-start.sh}). The
 \texttt{interactions} topic uses \textbf{3 partitions} keyed by
 \texttt{user\_id\,\%\,3}; this preserves per-user event ordering while balancing
 across the three Spark cores. \texttt{recommendations} and \texttt{alerts} use
