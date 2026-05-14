@@ -1,4 +1,3 @@
-#!/usr/bin/env bash
 # End-to-end launcher for MP3. Run inside WSL.
 # Each component is started in the background; logs go to $MP3_OUTPUT_DIR/logs/.
 set -euo pipefail
@@ -6,7 +5,7 @@ set -euo pipefail
 PROJECT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$PROJECT_DIR"
 
-# Auto-prefer WSL-native paths if user set them up (avoids /mnt/c 9p I/O bug)
+# (avoids /mnt/c 9p I/O bug)
 if [ -d "$HOME/mp3-data" ] && [ -z "${MP3_DATA_DIR:-}" ]; then
   export MP3_DATA_DIR="$HOME/mp3-data"
   echo "[run_all] using WSL-native MP3_DATA_DIR=$MP3_DATA_DIR"
